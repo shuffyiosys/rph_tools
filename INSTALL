@@ -1,0 +1,15 @@
+####How to Install and Update
+1. You must have (one or the other)
+  - [Firefox](http://www.getfirefox.com) with the [Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/) extension installed
+  - [Google Chrome](https://www.google.com/chrome/) or [Chromium](http://www.chromium.org/Home) with the [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en) extension installed.
+2. **For Google Chrome users:** Google Chrome by default does not allow installation of custom user scripts unless you either bypass it or they're on the Chrome store. To bypass this, follow [these instructions](http://techsupportguides.com/install-userscripts-in-chrome/) (that's a link).
+3. If you have a previous version, you should remove it.
+4. Then... 
+  - Click on the "Install" button on top to add the script or...
+  - Click on the "Source Code" tab and copy the source code, then...
+    - In Greasemonkey, select "Add new script", enter some information then press OK, then paste the code in there. Make sure to save it and enable it.
+    - In Tampermonkey, select "Add a new script", then paste the code in there. Press the save icon and enable it.
+5. Refresh RPH if you're on it already for the script to take effect.
+
+**To update**
+Just press the "install" button. This will overwrite the version you currently have.
