@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    0.0.9
+// @version    0.1.0
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -50,7 +50,7 @@ var blockTool = {state: false};
 var modTool = {state: false};
 var aboutHelpTool = {state: false};
 
-var validSettings = false;
+var validSettings = true;
   
 var flood_detect_users = {};
 var repeat_detect_users = {};
@@ -83,9 +83,11 @@ var html = '\
         <input style="width: 40px;" type="checkbox" id="pingExactMatch" name="pingExactMatch">Exact match\
         <input style="width: 40px;" type="checkbox" id="pingCaseSense" name="pingCaseSense">Case sensitive\
         <br><br><hr>\
-        <p><strong>Other options</strong></p>\
-        <p>Highlight Color (RGB hex value with hashtag, E.g., #ABCDEF):</p>\
-        <input style="width: 370px;" type="text" id="userNameTextColor" name="userNameTextColor" value="#111"><br>\
+        <p><strong>Chat room options</strong></p><br />\
+        <p>Enter a user name and text color (RGB hex value with hashtag, E.g., #ABCDEF):</span></p>\
+        <input style="width: 260px;" type="text" id="userNameTextbox" name="userNameTextbox" placeholder="Username">\
+        <input style="width: 80px;" type="text" id="userNameTextColor" name="userNameTextColor" value="#111">\
+        <button type="button" id="userNameTextColorButton">Set color</button>\<br /><br />\
         <input style="width: 40px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable" checked>No room links in chat\
       </form>\
       <br />\
@@ -119,8 +121,7 @@ var html = '\
       <form id="blockForm" style="display:none;">\
         <br>\
         <p>Enter user name to block, press Enter to submit.</p>\
-        <label style="font-size: small;">User to block:</label>\
-        <input style="width: 400px;" type="text" id="nameCheckTextbox" name="nameCheckTextbox"><input style="display: none; width: 0px;"type="text"><br>\
+        <input style="width: 400px;" type="text" id="nameCheckTextbox" name="nameCheckTextbox" placeholder="User to block."><br>\
         <br />\
         <p>Blocked users</p>\
         <select style="width: 100%;" id="blockedDropList"></select>\
@@ -143,7 +144,7 @@ var html = '\
         <input style="width: 100%;" type="text" id="modTargetTextInput">\
         <br />\
         <p id="modMessageLabel">Message</p>\
-        <input style="width: 100%;" type="text" id="modMessageTextInput" value="You have been banned">\
+        <input style="width: 100%;" type="text" id="modMessageTextInput">\
         <br />\
         <button type="button" id="kickButton">Kick</button>\
         <button style="margin-left: 30px;" type="button" id="banButton">Ban</button>\
@@ -157,7 +158,7 @@ var html = '\
         <br><p>Click on the "More Settings" button again to save your settings!</p>\
         <p>You may need to refresh the chat for the settings to take effect.</p>\
         <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
-        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Pings#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 0.0.9</p>\
+        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Pings#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 0.1.0</p>\
         <br>\
       </form>\
     </div>\
@@ -166,7 +167,7 @@ var html = '\
 var blockedUsers = [];
 
 //If this doesn't print, something happened with the global vars
-console.log('RPH tools start'); 
+console.log('RPH Tools - Script start'); 
 
 /////////////////////////////////////////////////////////////////////////////
 // @brief: Called when connection to chat is established. If it is, it will
@@ -178,6 +179,7 @@ $(function(){
     doRoomJoinSetup(data);
   }); 
 
+  $('#random-quote').hide();
   $('#top p.right').prepend('<a class="pings settings">More Settings</a>|');
   $('body').append(html);
   settingsTool.box = $('#settingsBox');
@@ -340,8 +342,25 @@ function ChatSettingsSetup(){
                 pingSettings.flags);
   });
   
-  $('#userNameTextColor').change(function(){
-    
+  $('#userNameTextColorButton').click(function(){
+    var text_color = document.getElementById('userNameTextColor').value;
+    if(testPingColor(text_color) === false){
+      mark_problem('userNameTextColor', true);
+    }
+    else{
+      var userName = document.getElementById('userNameTextbox').value;
+      text_color = text_color.substring(1,text_color.length);
+      getUserByName(userName, function(User){
+        if(User !== null){
+          mark_problem('userNameTextbox', false);
+          sendToSocket('modify', {userid:User.props.id, color:text_color});
+          console.log('RPH Tools - Modified user props:', User, text_color);
+        }
+        else{
+          mark_problem('userNameTextbox', true);
+        }
+      });
+    }
   });
   
   $('#roomLinksDisable').change(function(){
@@ -563,7 +582,7 @@ function TossCoin(){
   var new_msg = '(( Coin toss: ';
  
   if(Math.ceil(Math.random() * 2) == 2){
-    new_msg += '**heads**))';
+    new_msg += '**heads!**))';
   }
   else{
     new_msg += '**tails!**))';
@@ -854,6 +873,8 @@ function postMessage(thisRoom, data){
 		var classes = '';
     var $el = '';
     
+    console.log('RPH Tools - Ping settings', pingSettings.flags);
+    
     if( User.blocked ){
       return;
     }
@@ -942,7 +963,7 @@ function matchPing(msg){
   var pingFlags = pingSettings.flags;
   var regexParam = "m";
 
-  if((pingFlags & 8) > 0){
+  if((pingFlags & 16) === 0){
     regexParam = 'im';
   }
   
@@ -950,13 +971,14 @@ function matchPing(msg){
     if(pingNames[i] !== ""){
       var regexPattern = pingNames[i].trim();
       var matchString = '';
-      if((pingFlags & 16) > 0){
+      if((pingFlags & 8) > 0){
         regexPattern = "\\b" + pingNames[i].trim() + "\\b";
       }
       
       /* Check if search term is not in a link. */
       if (isInLink(pingNames[i], msg) === false){
         var testRegex = new RegExp(regexPattern, regexParam);
+        console.log('RPH Tools - regex', testRegex);
         if(msg.match(testRegex)){
           console.log('RPH Tools - name matched', i, pingNames[i]);
           return testRegex;
