@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    0.1.1
+// @version    0.1.0
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -83,13 +83,11 @@ var html = '\
         <input style="width: 40px;" type="checkbox" id="pingExactMatch" name="pingExactMatch">Exact match\
         <input style="width: 40px;" type="checkbox" id="pingCaseSense" name="pingCaseSense">Case sensitive\
         <br><br><hr>\
-        <p><strong>Extra options</strong></p><br />\
-        <p><strong>User text color</strong></p>\
-        <p>Enter a user name and text color (RGB hex value with hashtag):</span></p>\
+        <p><strong>Chat room options</strong></p><br />\
+        <p>Enter a user name and text color (RGB hex value with hashtag, E.g., #ABCDEF):</span></p>\
         <input style="width: 260px;" type="text" id="userNameTextbox" name="userNameTextbox" placeholder="Username">\
         <input style="width: 80px;" type="text" id="userNameTextColor" name="userNameTextColor" value="#111">\
         <button type="button" id="userNameTextColorButton">Set color</button><br /><br />\
-        <p><strong>Misc. Settings</strong></p><br />\
         <input style="width: 40px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable" checked>No room links in chat\
       </form>\
       <br />\
@@ -110,11 +108,11 @@ var html = '\
         <hr>\
         <p><strong>General RNG</strong></p>\
         <br />\
-        <label style="font-size: small;">Minimum (inclusive)</label>\
-        <input style="width: 200px; margin-left: 15px;" type="number" id="rngMinNumber" name="rngMinNumber" max="10" min="0" value="0">\
+        <label style="font-size: small;">Minimum (inclusive) &nbsp;</label>\
+        <input style="width: 200px;" type="number" id="rngMinNumber" name="rngMinNumber" max="10" min="0" value="0">\
         <br />\
         <label style="font-size: small;">Maximum (exclusive)</label>\
-        <input style="width: 200px; margin-left: 9px;" type="number" id="rngMaxNumber" name="rngMaxNumber" max="10" min="0" value="10">\
+        <input style="width: 200px;" type="number" id="rngMaxNumber" name="rngMaxNumber" max="10" min="0" value="10">\
         <br />\
         <button type="button" id="rngButton">Randomize!</button>\
       </form>\
@@ -160,7 +158,7 @@ var html = '\
         <br><p>Click on the "More Settings" button again to save your settings!</p>\
         <p>You may need to refresh the chat for the settings to take effect.</p>\
         <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
-        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Pings#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 0.1.1</p>\
+        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Pings#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 0.1.0</p>\
         <br>\
       </form>\
     </div>\
@@ -180,27 +178,6 @@ $(function(){
   chatSocket.on('confirm-room-join', function(data){
     doRoomJoinSetup(data);
   }); 
-  
-	_on('pm', function(data){
-		getUserById(data.to, function(fromUser){
-			if( fromUser.blocked ){
-				return;
-			}
-      else if (pingSettings.flags & 32){
-        var message = parseMsg(data.msg);
-        var fullMessage = $('div#pm-msgs.inner').find('p');
-        var links = $('div#pm-msgs.inner').find('a');
-        fullMessage = fullMessage[fullMessage.length-1];
-       
-       console.log('RPH Tools - Removing links in PMs');
-        for(var i = 0; i < links.length; i++)
-        {
-          fullMessage.innerHTML = fullMessage.innerHTML.replace(new RegExp(links[i].outerHTML, 'g'),
-                                                                links[i].innerHTML);
-        }
-      }
-		});
-	});
 
   $('#random-quote').hide();
   $('#top p.right').prepend('<a class="pings settings">More Settings</a>|');
@@ -210,7 +187,6 @@ $(function(){
   
   loadChatSettings();
   loadBlockSettings();
-  
   document.getElementById("rngMinNumber").min = -Math.pow(2, 32)-1;
   document.getElementById("rngMinNumber").max = Math.pow(2, 32)-1;
   document.getElementById("rngMaxNumber").min = -Math.pow(2, 32)-1;
@@ -897,11 +873,29 @@ function postMessage(thisRoom, data){
 		var classes = '';
     var $el = '';
     
+    console.log('RPH Tools - Ping settings', pingSettings.flags);
+    
     if( User.blocked ){
       return;
     }
     
     classes = getClasses(User, thisRoom);
+    
+    /* Remove any room links. */
+    if (pingSettings.flags & 32){
+      var linkMatches = [];
+      
+      linkMatches = msg.match(new RegExp('<a class="room-link">(.*?)<\/a>','g'));
+      console.log('RPH Tools - Link matches', linkMatches);
+      
+      if(linkMatches !== null){
+        for(i = 0; i < linkMatches.length; i++){
+          var prunedMsg = msg.match(new RegExp('>(.*?)<', ''))[1];
+          msg = msg.replace(linkMatches[i], prunedMsg);
+        }
+      }
+      console.log('RPH Tools - Processed message', msg);
+    }
     
     /* Add pinging higlights */
     try{
@@ -1104,48 +1098,4 @@ function isInLink(searchTerm, msg){
     }
     
     return match;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// @brief: Parses and processes an incoming message (only for chat)
-//
-// @param msg - Chat message to be processed.
-// @param msg - Chat message to be processed.
-//
-parseMsg = function(msg){
-  msg = msg.replace(/</g, '&lt;');
-  msg = msg.replace(/>/g, '&gt;');
-  msg = msg.replace(/\n/g, '<br />');
-  msg = msg.replace(/="/g, '');
-  msg = msg.replace(/(\[b\]|\*\*)(.*?)(\[\/b\]|\*\*)/g, '<strong>$2</strong>');
-  msg = msg.replace(/(\-\-\-)/g, '&mdash;');
-  msg = msg.replace(/(\[s\]|\-\-)(.*?)(\[\/s\]|\-\-)/g, '<strike>$2</strike>');
-  msg = msg.replace(/(?:\[i\]|\/\/)([^\/].*?)(?:\[\/i\]|\/\/)/g, function ( str, p1, offset, s ) {if(s.charAt(offset-1) == ":" ) {return str} else {return "<em>" + p1 + "</em>"}});
-  msg = msg.replace(/\b((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9\%])|www\d{0,3}[.]|(?:[a-z0-9\-_]+[.])+[a-z0[a-z]{2,4}\/?)(?:[^\s\(\)<>]+|\(([^\s\(\)<>]+|(\([^\s\(\)<>]+\)))*\))+(?:\(([^\s\(\)<>]+|(\([^\s\(\)<>]+\)))*\)|[^\s`\!\(\)\[\]\{\};:'"\.,<>\???????])?)/gi,function(url){
-    var full_url = url;
-    var extra = '';
-    if( !full_url.match('^https?:\/\/') ) {
-      full_url = 'http://' + full_url;
-    }
-    if( url.match(/\.(jpg|jpeg|png|gif)/i) ){
-      extra = 'class="img-wrapper"';
-    }
-    else if( url.match(/\S*youtube\.com\S*v=([\w-]+)/i) ){
-      extra = 'class="vid-wrapper"';
-    } 
-    return '<a href="' + full_url + '" target="_blank" '+extra+'>' + url + '</a>';
-  });
-  
-  if( typeof roomnames !== 'undefined' && roomnames.length > 0 ){
-    roomKeys = new RegExp( roomnames.join('|'), "g" );
-    
-    if ((pingSettings.flags & 32) == 0){
-      msg = msg.replace(roomKeys, function(match, offset, full){
-        return '<a class="room-link">'+match+'</a>';
-      });
-    }
-  }
-  
-  //&mdash;
-		return msg;
 }

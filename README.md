@@ -163,6 +163,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ================================================================================
 8. Version History
 ================================================================================
+0.1.0 - 12/12/2014
+- Added the ability to change a username's color by way of raw hex inputs. 
+- Script removes the quote/message of the day on the top header to fix an issue
+  where the message would hide the top right section if the browser width was 
+  too low.
+- Fixed a bug where exact matching and case sensitivity was not actually working 
+  properly.
+- Fixed a bug that was causing the script to think the ping settings were 
+  invalid even though they were valid
 
 0.0.8 - 12/10/2014
 - Adding kick and modding actions in the modding section
