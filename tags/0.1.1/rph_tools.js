@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    0.1.2
+// @version    0.1.1
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -52,6 +52,9 @@ var aboutHelpTool = {state: false};
 
 var validSettings = true;
   
+var flood_detect_users = {};
+var repeat_detect_users = {};
+  
 // HTML code to be injected into the chat.
 var html = '\
   <div id="settingsBox" style="display: none; position: absolute; top: 35px; z-index: 9999999; height: 360px; width: 480px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.7); right: 85px; background: url(&quot;http://www.rphaven.com/css/img/aero-bg.png&quot;) repeat scroll 0px 0px transparent; padding: 5px;" left="">\
@@ -69,9 +72,11 @@ var html = '\
         <p>Ping URL (must be WAV, MP3, or OGG file):</p>\
         <input style="width: 370px;" type="text" id="pingURL" name="pingURL"><br>\
         <p>Text Color (RGB hex value with hashtag, E.g., #ABCDEF):</p>\
-        <input style="width: 370px;"type="text" id="pingTextColor" name="pingTextColor" value="#000"><br>\
+        <input style="width: 370px;"type="text" id="pingTextColor" name="pingTextColor"\
+                 value="#000"><br>\
         <p>Highlight Color (RGB hex value with hashtag, E.g., #ABCDEF):</p>\
-        <input style="width: 370px;" type="text" id="pingHighlightColor" name="pingHighlightColor" value="#FFA"><br>\
+        <input style="width: 370px;" type="text" id="pingHighlightColor" name="pingHighlightColor"\
+                 value="#FFA"><br>\
         <p>Matching options</p>\
         <input style="width: 40px;" type="checkbox" id="pingBoldEnable" name="pingBoldEnable"><strong>Bold</strong>\
         <input style="width: 40px;" type="checkbox" id="pingItalicsEnable" name="pingItalicsEnable"><em>Italics</em>\
@@ -83,10 +88,9 @@ var html = '\
         <p>Enter a user name and text color (RGB hex value with hashtag):</span></p>\
         <input style="width: 260px;" type="text" id="userNameTextbox" name="userNameTextbox" placeholder="Username">\
         <input style="width: 80px;" type="text" id="userNameTextColor" name="userNameTextColor" value="#111">\
-        <button type="button" id="userNameTextColorButton">Set color</button><br />\
-        <input style="width: 40px;" type="checkbox" id="pmTextColorsCheckbox" name="pmTextColorsCheckbox">Use text colors in PM<br /><br />\
+        <button type="button" id="userNameTextColorButton">Set color</button><br /><br />\
         <p><strong>Misc. Settings</strong></p><br />\
-        <input style="width: 40px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable" checked>No room links\
+        <input style="width: 40px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable" checked>No room links.\
       </form>\
       <br />\
       <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="diceHeader">Random Number Generators</h3>\
@@ -107,10 +111,10 @@ var html = '\
         <p><strong>General RNG</strong></p>\
         <br />\
         <label style="font-size: small;">Minimum (inclusive)</label>\
-        <input style="width: 200px; margin-left: 15px;" type="number" id="rngMinNumber" name="rngMinNumber" max="4294967295" min="-4294967296" value="0">\
+        <input style="width: 200px; margin-left: 15px;" type="number" id="rngMinNumber" name="rngMinNumber" max="10" min="0" value="0">\
         <br />\
         <label style="font-size: small;">Maximum (exclusive)</label>\
-        <input style="width: 200px; margin-left: 9px;" type="number" id="rngMaxNumber" name="rngMaxNumber" max="4294967295" min="-4294967296" value="10">\
+        <input style="width: 200px; margin-left: 9px;" type="number" id="rngMaxNumber" name="rngMaxNumber" max="10" min="0" value="10">\
         <br />\
         <button type="button" id="rngButton">Randomize!</button>\
       </form>\
@@ -119,7 +123,7 @@ var html = '\
       <form id="blockForm" style="display:none;">\
         <br>\
         <p>Enter user name to block, press Enter to submit.</p>\
-        <input style="width: 400px;" type="text" id="nameCheckTextbox" name="nameCheckTextbox" placeholder="User to block"><br>\
+        <input style="width: 400px;" type="text" id="nameCheckTextbox" name="nameCheckTextbox" placeholder="User to block."><br>\
         <br />\
         <p>Blocked users</p>\
         <select style="width: 100%;" id="blockedDropList"></select>\
@@ -127,22 +131,22 @@ var html = '\
         <button type="button" id="unblockButton">Unblock</button>\
       </form>\
       <br />\
-      <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="moddingHeader">Mod Commands</h3>\
+      <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="moddingHeader">Modding</h3>\
       <form id="moddingForm" style="display:none;">\
         <br>\
-        <p>This will only work if you\'re actually a mod and you own the user name.</p>\
+        <p>This will only work if you\'re actually a mod of the room.</p>\
         <br />\
         <p>Room</p>\
-        <input style="width: 100%;" type="text" id="modRoomTextInput" placeholder="Room">\
+        <input style="width: 100%;" type="text" id="modRoomTextInput">\
         <br />\
         <p>Your username that\'s a mod</p>\
-        <input style="width: 100%;" type="text" id="modFromTextInput" placeholder="Your username">\
+        <input style="width: 100%;" type="text" id="modFromTextInput">\
         <br />\
         <p>Perform action on this user: </p>\
-        <input style="width: 100%;" type="text" id="modTargetTextInput" placeholder="Target\'s username">\
+        <input style="width: 100%;" type="text" id="modTargetTextInput">\
         <br />\
         <p id="modMessageLabel">Message</p>\
-        <input style="width: 100%;" type="text" id="modMessageTextInput" placeholder="Message">\
+        <input style="width: 100%;" type="text" id="modMessageTextInput">\
         <br />\
         <button type="button" id="kickButton">Kick</button>\
         <button style="margin-left: 30px;" type="button" id="banButton">Ban</button>\
@@ -156,7 +160,7 @@ var html = '\
         <br><p>Click on the "More Settings" button again to save your settings!</p>\
         <p>You may need to refresh the chat for the settings to take effect.</p>\
         <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
-        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 0.1.2</p>\
+        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Pings#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 0.1.1</p>\
         <br>\
       </form>\
     </div>\
@@ -176,6 +180,27 @@ $(function(){
   chatSocket.on('confirm-room-join', function(data){
     doRoomJoinSetup(data);
   }); 
+  
+	_on('pm', function(data){
+		getUserById(data.to, function(fromUser){
+			if( fromUser.blocked ){
+				return;
+			}
+      else if (pingSettings.flags & 32){
+        var message = parseMsg(data.msg);
+        var fullMessage = $('div#pm-msgs.inner').find('p');
+        var links = $('div#pm-msgs.inner').find('a');
+        fullMessage = fullMessage[fullMessage.length-1];
+       
+       console.log('RPH Tools - Removing links in PMs');
+        for(var i = 0; i < links.length; i++)
+        {
+          fullMessage.innerHTML = fullMessage.innerHTML.replace(new RegExp(links[i].outerHTML, 'g'),
+                                                                links[i].innerHTML);
+        }
+      }
+		});
+	});
 
   $('#random-quote').hide();
   $('#top p.right').prepend('<a class="pings settings">More Settings</a>|');
@@ -183,9 +208,13 @@ $(function(){
   settingsTool.box = $('#settingsBox');
   settingsTool.button = $('#top a.pings');
   
-  setupPMFunctions();
   loadChatSettings();
   loadBlockSettings();
+  
+  document.getElementById("rngMinNumber").min = -Math.pow(2, 32)-1;
+  document.getElementById("rngMinNumber").max = Math.pow(2, 32)-1;
+  document.getElementById("rngMaxNumber").min = -Math.pow(2, 32)-1;
+  document.getElementById("rngMaxNumber").max = Math.pow(2, 32)-1;
   
   console.log('RPH Tools - Init complete, setting up dialog box');
   SetUpToolsDialog();
@@ -339,10 +368,7 @@ function ChatSettingsSetup(){
   
   $('#userNameTextColorButton').click(function(){
     var text_color = document.getElementById('userNameTextColor').value;
-    if(testPingColor(text_color) === false || 
-       testTextColorRange(text_color) === false){
-      
-      console.log("RPH Tools - Bad text color", text_color);
+    if(testPingColor(text_color) === false){
       mark_problem('userNameTextColor', true);
     }
     else{
@@ -351,7 +377,6 @@ function ChatSettingsSetup(){
       getUserByName(userName, function(User){
         if(User !== null){
           mark_problem('userNameTextbox', false);
-          mark_problem('userNameTextColor', false);
           sendToSocket('modify', {userid:User.props.id, color:text_color});
           console.log('RPH Tools - Modified user props:', User, text_color);
         }
@@ -360,13 +385,6 @@ function ChatSettingsSetup(){
         }
       });
     }
-  });
-  
-  $('#pmTextColorsCheckbox').change(function(){
-    pingSettings.flags ^= 64;
-    pingSettings.flags |= 1;
-    console.log("RPH Tools - Room linking option changed. Flags are now: ", 
-                pingSettings.flags);
   });
   
   $('#roomLinksDisable').change(function(){
@@ -449,23 +467,8 @@ function testPingURL(PingURL){
 * @brief: Tests the highlight color to make sure it's valid
 */
 function testPingColor(HighlightColor){
-  var pattern = new RegExp(/(^#[0-9A-Fa-f]{6}$)|(^#[0-9A-Fa-f]{3}$)/i);
-  return pattern.test(HighlightColor);
-}
-
-function testTextColorRange(TextColor){
-  var rawHex = TextColor.substring(1,TextColor.length);
-  var red = parseInt(rawHex.substring(0,2), 16);
-  var green = parseInt(rawHex.substring(2,4), 16);
-  var blue = parseInt(rawHex.substring(4,6), 16);
-  
-  console.log('RPH Tools - Testing color range:', rawHex, red, green, blue);
-  
-  if ((red + green + blue)/3 <= 210){
-    return true;
-  }
-  
-  return false;
+    var pattern = new RegExp(/(^#[0-9A-Fa-f]{6}$)|(^#[0-9A-Fa-f]{3}$)/i);
+    return pattern.test(HighlightColor);
 }
 
 /****************************************************************************
@@ -863,51 +866,6 @@ function modAction(action){
   }
 }
 //
-// PM FUNCTIONS
-//
-/****************************************************************************
-* @brief Sets up PM callbacks
-*
-*/
-function setupPMFunctions(){
-	_on('pm', function(data){
-		getUserById(data.to, function(fromUser){
-			if( fromUser.blocked ){
-				return;
-			}
-      
-      /* Remove links */
-      if (pingSettings.flags & 32){
-        console.log('RPH Tools - Removing links incoming PM');
-        removeRoomLinksInPM()
-      }
-      
-      /* Adding user's color. */
-      if (pingSettings.flags & 64){
-        console.log('RPH Tools - PM from ', fromUser);
-        addUserColorInPM(fromUser)
-      }
-		});
-	});
-  
-  _on('outgoing-pm', function(data){
-    getUserById(data.from, function(fromUser){      
-      /* Remove links */
-      if (pingSettings.flags & 32){
-        console.log('RPH Tools - Removing links outgoing PM');
-        removeRoomLinksInPM()
-      }
-      
-      /* Adding user's color. */
-      if (pingSettings.flags & 64){
-        console.log('RPH Tools - PM from ', fromUser);
-        addUserColorInPM(fromUser)
-      }
-    });
-  });
-}
-
-//
 // MESSAGE OUT FUNCTIONS
 //
 /****************************************************************************
@@ -944,22 +902,6 @@ function postMessage(thisRoom, data){
     }
     
     classes = getClasses(User, thisRoom);
-    
-    /* Remove any room links. */
-    if (pingSettings.flags & 32){
-      var linkMatches = [];
-      
-      linkMatches = msg.match(new RegExp('<a class="room-link">(.*?)<\/a>','g'));
-      console.log('RPH Tools - Link matches', linkMatches);
-      
-      if(linkMatches !== null){
-        for(i = 0; i < linkMatches.length; i++){
-          var prunedMsg = msg.match(new RegExp('>(.*?)<', ''))[1];
-          msg = msg.replace(linkMatches[i], prunedMsg);
-        }
-      }
-      console.log('RPH Tools - Processed message', msg);
-    }
     
     /* Add pinging higlights */
     try{
@@ -1034,6 +976,7 @@ function matchPing(msg){
   for(i = 0; i < pingNames.length; i++){
     if(pingNames[i] !== ""){
       var regexPattern = pingNames[i].trim();
+      var matchString = '';
       if((pingFlags & 8) > 0){
         regexPattern = "\\b" + pingNames[i].trim() + "\\b";
       }
@@ -1041,6 +984,7 @@ function matchPing(msg){
       /* Check if search term is not in a link. */
       if (isInLink(pingNames[i], msg) === false){
         var testRegex = new RegExp(regexPattern, regexParam);
+        console.log('RPH Tools - regex', testRegex);
         if(msg.match(testRegex)){
           console.log('RPH Tools - name matched', i, pingNames[i]);
           return testRegex;
@@ -1162,21 +1106,46 @@ function isInLink(searchTerm, msg){
     return match;
 }
 
-function removeRoomLinksInPM(){
-  var fullMessage = $('div#pm-msgs.inner').find('p');
-  var links = $('div#pm-msgs.inner').find('a');
-  fullMessage = fullMessage[fullMessage.length-1];
- 
-  for(var i = 0; i < links.length; i++)
-  {
-    fullMessage.innerHTML = fullMessage.innerHTML.replace(new RegExp(links[i].outerHTML, 'g'),
-                                                          links[i].innerHTML);
+/////////////////////////////////////////////////////////////////////////////
+// @brief: Parses and processes an incoming message (only for chat)
+//
+// @param msg - Chat message to be processed.
+// @param msg - Chat message to be processed.
+//
+parseMsg = function(msg){
+  msg = msg.replace(/</g, '&lt;');
+  msg = msg.replace(/>/g, '&gt;');
+  msg = msg.replace(/\n/g, '<br />');
+  msg = msg.replace(/="/g, '');
+  msg = msg.replace(/(\[b\]|\*\*)(.*?)(\[\/b\]|\*\*)/g, '<strong>$2</strong>');
+  msg = msg.replace(/(\-\-\-)/g, '&mdash;');
+  msg = msg.replace(/(\[s\]|\-\-)(.*?)(\[\/s\]|\-\-)/g, '<strike>$2</strike>');
+  msg = msg.replace(/(?:\[i\]|\/\/)([^\/].*?)(?:\[\/i\]|\/\/)/g, function ( str, p1, offset, s ) {if(s.charAt(offset-1) == ":" ) {return str} else {return "<em>" + p1 + "</em>"}});
+  msg = msg.replace(/\b((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9\%])|www\d{0,3}[.]|(?:[a-z0-9\-_]+[.])+[a-z0[a-z]{2,4}\/?)(?:[^\s\(\)<>]+|\(([^\s\(\)<>]+|(\([^\s\(\)<>]+\)))*\))+(?:\(([^\s\(\)<>]+|(\([^\s\(\)<>]+\)))*\)|[^\s`\!\(\)\[\]\{\};:'"\.,<>\???????])?)/gi,function(url){
+    var full_url = url;
+    var extra = '';
+    if( !full_url.match('^https?:\/\/') ) {
+      full_url = 'http://' + full_url;
+    }
+    if( url.match(/\.(jpg|jpeg|png|gif)/i) ){
+      extra = 'class="img-wrapper"';
+    }
+    else if( url.match(/\S*youtube\.com\S*v=([\w-]+)/i) ){
+      extra = 'class="vid-wrapper"';
+    } 
+    return '<a href="' + full_url + '" target="_blank" '+extra+'>' + url + '</a>';
+  });
+  
+  if( typeof roomnames !== 'undefined' && roomnames.length > 0 ){
+    roomKeys = new RegExp( roomnames.join('|'), "g" );
+    
+    if ((pingSettings.flags & 32) == 0){
+      msg = msg.replace(roomKeys, function(match, offset, full){
+        return '<a class="room-link">'+match+'</a>';
+      });
+    }
   }
-}
-
-function addUserColorInPM(fromUser){
-  var userColor = fromUser.props.color;
-  var fullMessage = $('div#pm-msgs.inner').find('p');
-  fullMessage = fullMessage[fullMessage.length-1];
-  fullMessage.innerHTML = '<p style="color: #' + userColor + ';">' + fullMessage.innerHTML + '</p>';
+  
+  //&mdash;
+		return msg;
 }
