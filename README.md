@@ -163,6 +163,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ================================================================================
 8. Version History
 ================================================================================
+1.0.0 - 12/20/2014
+
+
+0.1.2 - 12/17/2014
+- Limited text colors so bright colors are not available.
+- Extended room link sanitizing on PMs to outgoing PMs. That was the problem I think, it works fine if the PM window isn't up.
+- Added the option to include your text color in PMs. This only affects the client side end, so if you enable it but the recipient doesn't, the recipient doesn't see the colors, only you.
+- For license reasons I reverted the room link sanitizing on the chat room end to what I originally did. Functionally it's the same.
+
+0.1.1 - 12/15/2014
+- Expanded disabling of room linking to PMs now.
+- Minor cleanup with UI.
+
 0.1.0 - 12/12/2014
 - Added the ability to change a username's color by way of raw hex inputs. 
 - Script removes the quote/message of the day on the top header to fix an issue
