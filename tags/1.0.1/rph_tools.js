@@ -37,13 +37,13 @@ var snd = null;
 //                5 - Remove room links in chat.
 //                6 - Use text colors in PM
 //                7 - Remove icons in chat
-var pingSettings = {
+var pingSettings = { 
   "pings"     : "",
   "ping_url"  : "http://www.storiesinflight.com/html5/audio/flute_c_long_01.wav",
   "color"     : "#000",
   "highlight" : "#FFA",
   "flags"     : 32};
-
+  
 // "tempSettings": Bitmask of temporary settings
 // 0 - Away message.
 var tempSettings = 0;
@@ -57,7 +57,7 @@ var modTool = {state: false};
 var aboutHelpTool = {state: false};
 
 var validSettings = true;
-
+  
 // HTML code to be injected into the chat.
 var html = '\
   <div id="settingsBox" style="display: none; position: absolute; top: 35px; z-index: 9999999; height: 360px; width: 480px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.7); right: 85px; background: url(&quot;http://www.rphaven.com/css/img/aero-bg.png&quot;) repeat scroll 0px 0px transparent; padding: 5px;" left="">\
@@ -134,7 +134,7 @@ var html = '\
         <button type="button" id="blockButton">Block</button><br>\
         <br />\
         <p>Blocked users</p>\
-        <select style="width: 100%;" size="5" id="blockedDropList"></select>\
+        <select style="width: 100%;" id="blockedDropList"></select>\
         <br />\
         <button type="button" id="unblockButton">Unblock</button>\
       </form>\
@@ -178,7 +178,7 @@ var blockedUsers = [];
 var usedPmAwayMsg = false;
 
 /* If this doesn't print, something happened with the global vars */
-console.log('RPH Tools script start');
+console.log('RPH Tools script start'); 
 
 /****************************************************************************
  *                          MAIN FUNCTIONS
@@ -191,18 +191,18 @@ console.log('RPH Tools script start');
 $(function(){
   chatSocket.on('confirm-room-join', function(data){
     doRoomJoinSetup(data);
-  });
+  }); 
 
   $('#random-quote').hide();
   $('#top p.right').prepend('<a class="pings settings">More Settings</a>|');
   $('body').append(html);
   settingsTool.box = $('#settingsBox');
   settingsTool.button = $('#top a.pings');
-
+  
   setupPMFunctions();
   loadChatSettings();
   loadBlockSettings();
-
+  
   console.log('RPH Tools - Init complete, setting up dialog box');
   SetUpToolsDialog();
 });
@@ -235,12 +235,12 @@ function SetUpToolsDialog(){
       console.log('RPH Tools - Ping settings', pingSettings);
     }
   });
-
+  
   ChatSettingsSetup();
   DiceRollSetup();
   BlockingSetup();
   ModdingSetup();
-
+    
   $('#aboutHelpHeader').click(function(){
     if(aboutHelpTool.state === true){
       $('#aboutHelpForm').hide();
@@ -250,7 +250,7 @@ function SetUpToolsDialog(){
       $('#aboutHelpForm').show();
       aboutHelpTool.state = true;
     }
-  });
+  }); 
 }
 
 /****************************************************************************
@@ -259,7 +259,7 @@ function SetUpToolsDialog(){
 /****************************************************************************
  * @brief Sets up the chat settings group.
  *
- * @note  Anything that deals with flags is listed by bit order for sanity's
+ * @note  Anything that deals with flags is listed by bit order for sanity's 
  *        sake
  ****************************************************************************/
 function ChatSettingsSetup(){
@@ -274,13 +274,13 @@ function ChatSettingsSetup(){
       populateSettingsDialog();
     }
   });
-
+  
   $('#pingNames').blur(function(){
     console.log("RPH Tools - Ping names changed.");
     pingSettings.pings = $('#pingNames').val().replace('\n','').replace('\r','');
     pingSettings.flags |= 1;
   });
-
+  
   $('#pingURL').blur(function(){
     var ping_url = document.getElementById('pingURL').value;
     if(testPingURL(ping_url) === false){
@@ -296,7 +296,7 @@ function ChatSettingsSetup(){
       console.log("RPH Tools - Ping URL changed.");
     }
   });
-
+  
   $('#pingTextColor').blur(function(){
     var ping_color = document.getElementById('pingTextColor').value;
     if(testPingColor(ping_color) === false){
@@ -311,7 +311,7 @@ function ChatSettingsSetup(){
       console.log("RPH Tools - Ping text color changed.");
     }
   });
-
+  
   $('#pingHighlightColor').blur(function(){
     var ping_highlight = document.getElementById('pingHighlightColor').value;
     if(testPingColor(ping_highlight) === false){
@@ -326,40 +326,40 @@ function ChatSettingsSetup(){
       console.log("RPH Tools - Ping highlight color changed");
     }
   });
-
+  
   $('#pingBoldEnable').change(function(){
     pingSettings.flags ^= 2;
     pingSettings.flags |= 1;
-    console.log("RPH Tools - Ping text bold changed. Flags are now: ",
+    console.log("RPH Tools - Ping text bold changed. Flags are now: ", 
                 pingSettings.flags);
   });
-
+  
   $('#pingItalicsEnable').change(function(){
     pingSettings.flags ^= 4;
     pingSettings.flags |= 1;
-    console.log("RPH Tools - Ping Text italicize changed. Flags are now: ",
+    console.log("RPH Tools - Ping Text italicize changed. Flags are now: ", 
                 pingSettings.flags);
   });
-
+  
   $('#pingExactMatch').change(function(){
     pingSettings.flags ^= 8;
     pingSettings.flags |= 1;
-    console.log("RPH Tools - Ping Exact match changed. Flags are now: ",
+    console.log("RPH Tools - Ping Exact match changed. Flags are now: ", 
                 pingSettings.flags);
   });
-
+  
   $('#pingCaseSense').change(function(){
     pingSettings.flags ^= 16;
     pingSettings.flags |= 1;
-    console.log("RPH Tools - Ping Case sensitivity changed. Flags are now: ",
+    console.log("RPH Tools - Ping Case sensitivity changed. Flags are now: ", 
                 pingSettings.flags);
   });
-
+  
   $('#userNameTextColorButton').click(function(){
     var text_color = document.getElementById('userNameTextColor').value;
-    if(testPingColor(text_color) === false ||
+    if(testPingColor(text_color) === false || 
        testTextColorRange(text_color) === false){
-
+      
       console.log("RPH Tools - Bad text color", text_color);
       mark_problem('userNameTextColor', true);
     }
@@ -367,12 +367,12 @@ function ChatSettingsSetup(){
       var userName = document.getElementById('userNameTextbox').value;
       var userToEdit = null;
       mark_problem('userNameTextColor', false);
-
+      
       text_color = text_color.substring(1,text_color.length);
       getUserByName(userName, function(User){
         userToEdit = User;
       });
-
+      
       if(userToEdit !== null){
         mark_problem('userNameTextbox', false);
         sendToSocket('modify', {userid:userToEdit.props.id, color:text_color});
@@ -383,31 +383,31 @@ function ChatSettingsSetup(){
       }
     }
   });
-
+  
   $('#roomLinksDisable').change(function(){
     pingSettings.flags ^= 32;
     pingSettings.flags |= 1;
-    console.log("RPH Tools - Room linking option changed. Flags are now: ",
+    console.log("RPH Tools - Room linking option changed. Flags are now: ", 
                 pingSettings.flags);
   });
-
+  
   $('#pmTextColorsCheckbox').change(function(){
     pingSettings.flags ^= 64;
     pingSettings.flags |= 1;
-    console.log("RPH Tools - Room linking option changed. Flags are now: ",
+    console.log("RPH Tools - Room linking option changed. Flags are now: ", 
                 pingSettings.flags);
-  });
+  });  
 
   $('#imgIconDisable').change(function(){
     pingSettings.flags ^= 128;
     pingSettings.flags |= 1;
-    console.log("RPH Tools - Image icon posting settings changed. Flags are now: ",
+    console.log("RPH Tools - Image icon posting settings changed. Flags are now: ", 
                 pingSettings.flags);
   });
-
+  
   $('#pmAwayMessageCheckBox').change(function(){
     tempSettings ^= 1;
-    console.log("RPH Tools - PM away message option changed. Flags are now: ",
+    console.log("RPH Tools - PM away message option changed. Flags are now: ", 
                 tempSettings);
   });
 
@@ -423,20 +423,20 @@ function populateSettingsDialog(){
   document.getElementById("pingURL").value = pingSettings.ping_url;
   document.getElementById("pingTextColor").value = pingSettings.color;
   document.getElementById("pingHighlightColor").value = pingSettings.highlight;
-
+  
   document.getElementById("pingBoldEnable").checked = false;
   document.getElementById("pingItalicsEnable").checked = false;
   document.getElementById("pingExactMatch").checked = false;
   document.getElementById("pingCaseSense").checked = false;
-
+  
   if( (pingSettings.flags & 2) > 0 ){
     document.getElementById("pingBoldEnable").checked = true;
   }
-
+  
   if( (pingSettings.flags & 4) > 0 ){
     document.getElementById("pingItalicsEnable").checked = true;
   }
-
+  
   if( (pingSettings.flags & 8) > 0 ){
     document.getElementById("pingExactMatch").checked = true;
   }
@@ -444,23 +444,19 @@ function populateSettingsDialog(){
   if( (pingSettings.flags & 16) > 0 ){
     document.getElementById("pingCaseSense").checked = true;
   }
-
+  
   if( (pingSettings.flags & 32) > 0 ){
     document.getElementById("roomLinksDisable").checked = true;
   }
-
+  
   if( (pingSettings.flags & 64) > 0 ){
     document.getElementById("pmTextColorsCheckbox").checked = true;
   }
-
-  if( (pingSettings.flags & 128) > 0){
-    document.getElementById("imgIconDisable").checked = true;
-  }
-
+  
   if( (tempSettings & 1) > 0 ){
     document.getElementById("pmAwayMessageCheckBox").checked = true;
   }
-
+  
   // Prevents populating the dialogue from counting as a change.
   pingSettings.flags &= ~1;
 }
@@ -475,7 +471,7 @@ function testPingURL(PingURL){
     var match = false;
     var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
     var pingExt = PingURL.slice( (PingURL.length-4), (PingURL.length));
-
+    
     if(PingURL === '')
     {
       match = true;
@@ -517,12 +513,12 @@ function testTextColorRange(TextColor){
   var red = 255;
   var green = 255;
   var blue = 255;
-
+  
   if (rawHex.length == 3){
     red = parseInt(rawHex.substring(0,1), 16);
     green = parseInt(rawHex.substring(1,2), 16);
     blue = parseInt(rawHex.substring(2,3), 16);
-
+    
     if ((red <= 13) && (green <= 13) && (blue <= 13)) {
       console.log('RPH Tools - Text color check passed (3 chars)');
       return true;
@@ -537,7 +533,7 @@ function testTextColorRange(TextColor){
       return true;
     }
   }
-
+  
   console.log('RPH Tools - Text color check failed', rawHex, red, green, blue);
   return false;
 }
@@ -559,16 +555,16 @@ function loadChatSettings(){
         keys.push(key);
       }
     }
-
+    
     for( i = 0; i < keys.length; i++){
       pingSettings[keys[i]] = settings_array[i];
     }
     console.log('RPH Tools - Ping cookie found for', cookie_name);
-
+    
     //Refresh the cookie
     saveChatSettings(pingSettings);
     console.log('RPH Tools - Refreshing ping settings cookie');
-
+    
     //Initiate snd variable
     snd = new Audio(pingSettings.ping_url);
   }
@@ -616,7 +612,7 @@ function DiceRollSetup(){
       diceTool.state = true;
     }
   });
-
+  
   $('#diceNum').blur(function(){
     var dieNum = parseInt($('#diceNum').val());
     if (dieNum < 1){
@@ -626,7 +622,7 @@ function DiceRollSetup(){
       document.getElementById("diceNum").value = 10;
     }
   });
-
+  
   $('#diceSides').blur(function(){
     var dieSides = parseInt($('#diceSides').val());
     if (dieSides < 2){
@@ -636,7 +632,7 @@ function DiceRollSetup(){
       document.getElementById("diceSides").value = 100;
     }
   });
-
+  
   $('#rngMinNumber').blur(function(){
     var minNum = parseInt($('#rngMinNumber').val());
     if (minNum < -4294967296){
@@ -646,7 +642,7 @@ function DiceRollSetup(){
       document.getElementById("rngMinNumber").value = 4294967295;
     }
   });
-
+  
   $('#rngMaxNumber').blur(function(){
     var maxNum = parseInt($('#rngMaxNumber').val());
     if (maxNum < -4294967296){
@@ -656,15 +652,15 @@ function DiceRollSetup(){
       document.getElementById("rngMaxNumber").value = 4294967295;
     }
   });
-
+  
   $('#coinTossButton').click(function(){
     TossCoin();
   });
-
+  
   $('#diceButton').click(function(){
     RollDice();
   });
-
+  
   $('#rngButton').click(function(){
     GetRandomNum();
   });
@@ -679,7 +675,7 @@ function TossCoin(){
   var this_room = getRoom(room_name);
   var userID = parseInt(class_name[2].substring(0,6));
   var new_msg = '(( Coin toss: ';
-
+ 
   if(Math.ceil(Math.random() * 2) == 2){
     new_msg += '**heads!**))';
   }
@@ -702,7 +698,7 @@ function RollDice(){
   var dieNum = parseInt($('#diceNum').val());
   var dieSides =  parseInt($('#diceSides').val());
   var new_msg = '/me rolled ' + dieNum + 'd' + dieSides + ': ';
-
+  
   for(i = 0; i < dieNum; i++){
     new_msg += Math.ceil(Math.random() * dieSides);
     new_msg += ' ';
@@ -722,7 +718,7 @@ function GetRandomNum(){
   var minNum = parseInt($('#rngMinNumber').val());
   var maxNum =  parseInt($('#rngMaxNumber').val());
   var new_msg = '(( Random number generated: **';
-
+  
   new_msg += Math.floor((Math.random() * (maxNum - minNum) + minNum)) + '** ))';
 
   this_room.sendMessage(new_msg, userID);
@@ -736,16 +732,16 @@ function DisableButtons(){
   document.getElementById("coinTossButton").value = "Wait...";
   document.getElementById("diceButton").value = "Wait...";
   document.getElementById("rngButton").value = "Wait...";
-
+  
   document.getElementById("coinTossButton").disabled = true;
   document.getElementById("diceButton").disabled = true;
   document.getElementById("rngButton").disabled = true;
-
+  
   setTimeout(function(){
       document.getElementById("coinTossButton").value = "Flip it!";
       document.getElementById("diceButton").value = "Let's roll!";
       document.getElementById("rngButton").value = "Let's roll!";
-
+      
       document.getElementById("diceButton").disabled = false;
       document.getElementById("coinTossButton").disabled = false;
       document.getElementById("rngButton").disabled = false;
@@ -768,31 +764,33 @@ function BlockingSetup(){
       blockTool.state = true;
     }
   });
-
+  
   $('#blockButton').click(function(){
     var userToBlock = null;
     var userName = $('#nameCheckTextbox').val();
     getUserByName(userName, function(User){
       userToBlock = User;
     });
-
+    
     console.log('RPH Tools - ', userToBlock);
     if (userToBlock !== null){
       blockUser(userToBlock);
       mark_problem('nameCheckTextbox', false);
+      saveBlockSettings();
     }
     else{
       mark_problem('nameCheckTextbox', true);
     }
   });
-
+    
   $('#unblockButton').click(function(){
     var names = document.getElementById("blockedDropList");
     var userId = names.options[names.selectedIndex].value;
     UserChangeIgnore(userId, false);
     names.remove(names.selectedIndex);
     blockedUsers.splice(blockedUsers.indexOf(userId),1);
-
+    saveBlockSettings();
+    
     console.log('RPH Tools - Unblocking user', userId);
     console.log('RPH Tools - Blocked users', blockedUsers);
   });
@@ -816,19 +814,17 @@ function UserChangeIgnore(UserId, Ignore){
  ****************************************************************************/
 function blockUser(User){
   blockedUsers.push(User.props.id);
-  $('#blockedDropList').append('<option value="' + User.props.id + '">' +
+  $('#blockedDropList').append('<option value="' + User.props.id + '">' + 
                                 User.props.name + '</option>');
   UserChangeIgnore(User.props.id, true);
   console.log('RPH Tools - Blocking user', User.props.name);
   console.log('RPH Tools - Blocked users', blockedUsers);
-
-  saveBlockSettings();
 }
 
 /****************************************************************************
  * @brief:    Blocks a user by their ID
  * @param:    userID - ID of the using being blocked
- *
+ * 
  * @note:     This is defined here to make lint tools happy about not defining
  *            a function in a loop.
  ****************************************************************************/
@@ -841,7 +837,7 @@ function blockUserById(userID){
 }
 
 /****************************************************************************
- * @brief:   Saves the blocked users list into a cookie.
+ * @brief:   Saves the blocked users list into a cookie. 
  ****************************************************************************/
 function saveBlockSettings(){
   var blockedUsersJoined = "";
@@ -892,23 +888,23 @@ function ModdingSetup(){
       modTool.state = true;
     }
   });
-
+  
   $('#kickButton').click(function(){
     modAction('kick');
   });
-
+  
   $('#banButton').click(function(){
     modAction('ban');
   });
-
+  
   $('#unbanButton').click(function(){
     modAction('unban');
   });
-
+  
   $('#modButton').click(function(){
     modAction('add-mod');
   });
-
+  
   $('#unmodButton').click(function(){
     modAction('remove-mod');
   });
@@ -924,31 +920,31 @@ function modAction(action){
   var targetId = 0;
   var target = '';
   var modMessage = ' ';
-
+  
   console.log('RPH Tools - Mod action parameters',
               action,
               document.getElementById("modRoomTextInput").value,
               document.getElementById("modTargetTextInput").value,
               document.getElementById("modFromTextInput").value,
               document.getElementById("modMessageTextInput").value);
-
+  
   getUserByName(document.getElementById("modTargetTextInput").value, function(Target){
     targetId = Target.props.id;
     target = Target.props.name;
     console.log('RPH Tools - Mod action target: ', Target);
   });
-
+  
   getUserByName(document.getElementById("modFromTextInput").value, function(User){
     userId = User.props.id;
     modMessage += document.getElementById("modMessageTextInput").value;
     console.log('RPH Tools - User who is issuing action: ', User);
-
+    
     if (action === 'add-mod' || action === 'remove-mod'){
       modMessage = '';
     }
     chatSocket.emit(action, {room:room, userid:userId, targetid:targetId, msg:modMessage});
   });
-
+  
   if(action === 'ban'){
     modMessage = "Banning: " + target + " by: " + user + " In room: " + room;
     console.log('RPH Tools - ', modMessage);
@@ -977,44 +973,44 @@ function modAction(action){
  * @brief:    Sets up PM callback functions for PM actions
  ****************************************************************************/
 function setupPMFunctions(){
-  _on('pm', function(data){
-    getUserById(data.to, function(fromUser){
-      if( fromUser.blocked ){
-        return;
-      }
-
+	_on('pm', function(data){
+		getUserById(data.to, function(fromUser){
+			if( fromUser.blocked ){
+				return;
+			}
+      
       /* Remove links */
       if (pingSettings.flags & 32){
         removeRoomLinksInPM();
       }
-
+      
       /* Adding user's color. */
       if (pingSettings.flags & 64){
         addUserColorInPM(fromUser);
       }
-
+      
       /* Send away message. */
       var away_msg = document.getElementById('awayMessageTextbox').value;
       if ((tempSettings & 1) > 0 && away_msg.length > 0){
         usedPmAwayMsg = true;
         sendToSocket('pm', {'from':data.from, 'to':data.to, 'msg':away_msg, 'target':'all'});
       }
-
-    });
-  });
-
+      
+		});
+	});
+  
   _on('outgoing-pm', function(data){
     getUserById(data.from, function(fromUser){
       /* Remove links */
       if (pingSettings.flags & 32){
         removeRoomLinksInPM();
       }
-
+      
       /* Adding user's color. */
       if (pingSettings.flags & 64){
         addUserColorInPM(fromUser);
       }
-
+      
       if (usedPmAwayMsg === false){
         tempSettings &= ~1;
         document.getElementById("pmAwayMessageCheckBox").checked = false;
@@ -1033,20 +1029,20 @@ function setupPMFunctions(){
  * @param:    room - Room that the user has joined
  ****************************************************************************/
 function doRoomJoinSetup(room){
-  var thisRoom = getRoom(room.room);
-
+	var thisRoom = getRoom(room.room);
+  
   thisRoom.onMessage = function (data){
-    var thisRoom = this;
-    if( account.ignores.indexOf(data.userid) !== -1 ){
-      return;
-    }
-    console.log('onMsg', data);
+		var thisRoom = this;
+		if( account.ignores.indexOf(data.userid) !== -1 ){
+			return;
+		}
+		console.log('onMsg', data);
     postMessage(thisRoom, data);
-  };
+	};
 }
 
 /****************************************************************************
- * @brief:    Takes a message received in the chat and modifies it if it has
+ * @brief:    Takes a message received in the chat and modifies it if it has 
  *            a match for pinging
  * @param:    thisRoom - The room that the message is for.
  * @param:    data - The message for the room
@@ -1055,24 +1051,24 @@ function postMessage(thisRoom, data){
   console.log('RPH Tools: postMessage', data);
   getUserById(data.userid, function(User){
     var timestamp = makeTimestamp(data.time);
-    var msg = parseMsg(data.msg);
-    var classes = '';
+		var msg = parseMsg(data.msg);
+		var classes = '';
     var $el = '';
     var msgHtml = '';
-
+    
     if( User.blocked ){
       return;
     }
-
+    
     classes = getClasses(User, thisRoom);
-
+    
     /* Remove any room links. */
     if (pingSettings.flags & 32){
       var linkMatches = [];
-
+      
       linkMatches = msg.match(new RegExp('<a class="room-link">(.*?)<\/a>','g'));
       console.log('RPH Tools - Link matches', linkMatches);
-
+      
       if(linkMatches !== null){
         for(i = 0; i < linkMatches.length; i++){
           var prunedMsg = msg.match(new RegExp('>(.*?)<', ''))[1];
@@ -1081,12 +1077,12 @@ function postMessage(thisRoom, data){
       }
       console.log('RPH Tools - Processed message', msg);
     }
-
+    
     /* Add pinging higlights */
     try{
       var testRegex = null;
       testRegex = matchPing(msg);
-
+    
       if (testRegex !== null){
         msg = highlightPing(msg, testRegex);
         highlightRoom(thisRoom);
@@ -1099,24 +1095,24 @@ function postMessage(thisRoom, data){
       console.log('RPH Tools - I tried D:', err);
       msg = parseMsg(data.msg);
     }
-
+    
     if( msg.charAt(0) === '/' && msg.slice(1,3) === 'me'){
       classes += 'action ';
       msg = msg.slice(3);
-      msgHtml = '<span class="first">[' + timestamp +
+      msgHtml = '<span class="first">[' + timestamp + 
             ']</span>\n<span style="color:#' + User.props.color +
             '"><a class="name" title="[' + timestamp +
             ']" style="color:#' + User.props.color +
             '">'+ User.props.name + '</a>' + msg + '</span>';
     } else {
-      msgHtml = '<span class="first">[' + timestamp + ']<a class="name" title="[' +
-            timestamp + ']" style="color:#' + User.props.color + '">' +
-            User.props.name +
-            '<span class="colon">:</span></a></span>\n<span style="color:#' +
+      msgHtml = '<span class="first">[' + timestamp + ']<a class="name" title="[' + 
+            timestamp + ']" style="color:#' + User.props.color + '">' + 
+            User.props.name + 
+            '<span class="colon">:</span></a></span>\n<span style="color:#' + 
             User.props.color+'">' + msg +'</span>';
     }
-
-
+              
+    
     if((pingSettings.flags & 128) > 0){
       $el = appendMessageTextOnly(msgHtml, thisRoom).addClass(classes);
     }
@@ -1148,7 +1144,7 @@ function getClasses(User, thisRoom){
   if( isInGroup(thisRoom, User) ){
     classes += 'group-member ';
   }
-
+  
   return classes;
 }
 
@@ -1166,14 +1162,14 @@ function matchPing(msg){
   if((pingFlags & 16) === 0){
     regexParam = 'im';
   }
-
+  
   for(i = 0; i < pingNames.length; i++){
     if(pingNames[i] !== ""){
       var regexPattern = pingNames[i].trim();
       if((pingFlags & 8) > 0){
         regexPattern = "\\b" + pingNames[i].trim() + "\\b";
       }
-
+      
       /* Check if search term is not in a link. */
       if (isInLink(pingNames[i], msg) === false){
         var testRegex = new RegExp(regexPattern, regexParam);
@@ -1184,7 +1180,7 @@ function matchPing(msg){
       }
     }
   }
-
+  
   return null;
 }
 
@@ -1201,29 +1197,29 @@ function highlightPing(msg, testRegex){
   var pingHighlight =  pingSettings.highlight;
   var boldEnabled = "";
   var italicsEnabled = "";
-
+  
   if((pingFlags & 2) > 0){
     boldEnabled = "font-weight: bold; ";
   }
-
+  
   if((pingFlags & 4) > 0){
     italicsEnabled = "font-style:italic; ";
   }
-
-  console.log('<span style="color: ' + pingColor + '; background: ' +
-               pingHighlight +'; ' + boldEnabled + italicsEnabled + '">' +
+  
+  console.log('<span style="color: ' + pingColor + '; background: ' + 
+               pingHighlight +'; ' + boldEnabled + italicsEnabled + '">' + 
                msg.match(testRegex) + '</span>');
-  msg = msg.replace(testRegex, '<span style="color: ' + pingColor +
+  msg = msg.replace(testRegex, '<span style="color: ' + pingColor + 
                     '; background: ' + pingHighlight +'; ' + boldEnabled +
                     italicsEnabled + '">' + msg.match(testRegex) + '</span>');
   console.log('RPH Tools - Pinged message', msg);
-
+  
   return msg;
 }
 
 /****************************************************************************
- * @brief:
- * @param:
+ * @brief:    
+ * @param:    
  ****************************************************************************/
 function highlightRoom(thisRoom){
   //Don't highlight chat tab if the chat is marked as active.
@@ -1231,7 +1227,7 @@ function highlightRoom(thisRoom){
   var className = thisRoom.$tabs[0][0].className;
   var pingColor = pingSettings.color;
   var pingHighlight =  pingSettings.highlight;
-
+  
   if(className.search(testRegex) == -1){
     thisRoom.$tabs[0].css('background-color', pingHighlight);
     thisRoom.$tabs[0].css('color', pingColor);
@@ -1257,7 +1253,7 @@ function highlightRoom(thisRoom){
  *                          UTILITY FUNCTIONS
  ****************************************************************************/
 /****************************************************************************
- * @brief:   Saves entry in a cookie for storage
+ * @brief:   Saves entry in a cookie for storage 
  * @param:   c_name - Cookie's name
  * @param:   value - Value of the cookie
  * @param:   exdays - Days until expiration
@@ -1286,7 +1282,7 @@ function getCookie(c_name) {
 }
 
 /****************************************************************************
- * @brief:    Marks if there's a problem or not.
+ * @brief:    Marks if there's a problem or not.   
  * @param:    element - element ID that has the problem
  * @param:    mark - true or false if it has a problem
  ****************************************************************************/
@@ -1314,7 +1310,7 @@ function isInLink(searchTerm, msg){
     {
       match = true;
     }
-
+    
     return match;
 }
 
@@ -1327,7 +1323,7 @@ function removeRoomLinksInPM(){
   var fullMessage = $('div#pm-msgs.inner').find('p');
   var links = $('div#pm-msgs.inner').find('a');
   fullMessage = fullMessage[fullMessage.length-1];
-
+ 
   for(var i = 0; i < links.length; i++)
   {
     fullMessage.innerHTML = fullMessage.innerHTML.replace(new RegExp(links[i].outerHTML, 'g'),
@@ -1344,7 +1340,7 @@ function addUserColorInPM(fromUser){
   var fullMessage = $('div#pm-msgs.inner').find('p');
   fullMessage = fullMessage[fullMessage.length-1];
   fullMessage.innerHTML = '<p style="color: #' + userColor + ';">' + fullMessage.innerHTML + '</p>';
-
+  
   console.log('RPH Tools - Adding color to PM', userColor, fromUser);
 }
 
@@ -1363,10 +1359,10 @@ function appendMessageTextOnly(html, thisRoom){
     extra = 60;
   }
   thisRoom.$el.animate({scrollTop: '+='+($el.outerHeight()+extra)}, 180);
-
+  
   if( thisRoom.$el.children('div').length > account.settings.maxHistory ){
     thisRoom.$el.children('div:not(.sys):lt(3)').remove();
   }
-
+  
   return $el;
 }

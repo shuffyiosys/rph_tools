@@ -164,7 +164,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 8. Version History
 ================================================================================
 1.0.0 - 12/20/2014
-
+- Cleaned up the code a bit. Which is why it's now a 1.0.0
+  - Removed some console dumps since they were not really important anymore
+- Reorganized the UI to be consistent.
+- Added away messages for PM. Set an away message and enable it and anyone who PMs you will get that message. If you respond in any way, it'll turn off auto-replying. Works across your account, but I'm considering it per-username since this is just a session only feature (as in, if you log out, it will reset).
+- Fixed text color checking again. It didn't work on text inputs with three characters. Also changed the value limiting algorithm.
+- Fixed bounds checking for the general RNG (also so it'd stop using Math.Pow)
+- Blocking is now by way of a button instead of pressing enter on the text input. For some reason, pressing enter may make the browser think you're doing a URL request, which tries to redirect you the site with the request.
 
 0.1.2 - 12/17/2014
 - Limited text colors so bright colors are not available.
