@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name       RPH Tools
+// @name       RPH Tools Test
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
 // @version    1.0.1
 // @description Adds extended settings to RPH
@@ -35,7 +35,7 @@ var snd = null;
 //                3 - Use exact matching
 //                4 - Case sensitive matching
 //                5 - Remove room links in chat.
-//                6 - Use text colors in PM
+//                6 - Free
 //                7 - Remove icons in chat
 var pingSettings = {
   "pings"     : "",
@@ -66,7 +66,8 @@ var html = '\
       <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="pingHeader">Chat room and PM options</h3>\
       <form id="ping_form" style="display:none;">\
         <p><strong>User text color</strong></p>\
-        <p>Enter a user name and text color (RGB hex value with hashtag):</span></p>\
+        <p>Enter a user name and text color (RGB hex value with hashtag):</p>\
+        <p>Value for each channel cannot exceed D2 for 6 characters or D for 3.</p>\
         <input style="width: 260px;" type="text" id="userNameTextbox" name="userNameTextbox" placeholder="Username">\
         <input style="width: 80px;" type="text" id="userNameTextColor" name="userNameTextColor" value="#111">\
         <button type="button" id="userNameTextColorButton">Set color</button>\
@@ -91,10 +92,12 @@ var html = '\
         <input style="width: 40px;" type="checkbox" id="pingCaseSense" name="pingCaseSense">Case sensitive\
         <br><br><hr>\
         <p><strong>PM options</strong></p><br />\
-        <input style="width: 40px;" type="checkbox" id="pmTextColorsCheckbox" name="pmTextColorsCheckbox">Use text colors in PM<br /><br />\
-        <p>Away message:</span></p>\
-        <input style="width: 40px;" type="checkbox" id="pmAwayMessageCheckBox" name="pmAwayMessageCheckBox">Turn on away message<br /><br />\
+        <p>Away message:</p>\
+        <p>Select a name to have an away message for (names with a message will be highlighted)</p>\
+        <select style="width: 300px;" id="pmNamesDroplist" size="5"></select><br><br>\
         <input style="width: 400px;" type="text" id="awayMessageTextbox" name="awayMessageTextbox" maxlength="300" placeholder="Away message...">\
+        <button type="button" id="setAwayButton">Set</button>\
+        <button type="button" id="removeAwayButton">Remove</button>\
         <br><br><hr>\
         <p><strong>Extra options</strong></p><br />\
         <input style="width: 40px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable" checked>No room links\
@@ -176,7 +179,7 @@ var html = '\
 
 var blockedUsers = [];
 var usedPmAwayMsg = false;
-
+var awayMessages = {};
 /* If this doesn't print, something happened with the global vars */
 console.log('RPH Tools script start');
 
@@ -189,6 +192,15 @@ console.log('RPH Tools script start');
  *         settings
  ***************************************************************************/
 $(function(){
+  _on('accounts', function(){
+    var users = account.users;
+    console.log('RPH Pings - User account retreived.', account.users);
+
+    for(i = 0; i < users.length; i++){
+      getUserName(users[i]);
+    }
+  });
+
   chatSocket.on('confirm-room-join', function(data){
     doRoomJoinSetup(data);
   });
@@ -391,13 +403,6 @@ function ChatSettingsSetup(){
                 pingSettings.flags);
   });
 
-  $('#pmTextColorsCheckbox').change(function(){
-    pingSettings.flags ^= 64;
-    pingSettings.flags |= 1;
-    console.log("RPH Tools - Room linking option changed. Flags are now: ",
-                pingSettings.flags);
-  });
-
   $('#imgIconDisable').change(function(){
     pingSettings.flags ^= 128;
     pingSettings.flags |= 1;
@@ -411,6 +416,38 @@ function ChatSettingsSetup(){
                 tempSettings);
   });
 
+  $('#pmNamesDroplist').change(function(){
+    var userId = $('#pmNamesDroplist option:selected').val();
+
+    if (awayMessages[userId] !== undefined){
+      var message = awayMessages[userId].message;
+      document.getElementById("awayMessageTextbox").value = awayMessages[userId].message;
+    }
+    else{
+      document.getElementById("awayMessageTextbox").value = "";
+    }
+  });
+
+  $('#setAwayButton').click(function(){
+    var awayMsgObj = {
+      "usedPmAwayMsg" : false,
+      "message"       : ""
+    };
+    var userId = $('#pmNamesDroplist option:selected').val();
+    awayMsgObj.message = document.getElementById('awayMessageTextbox').value;
+    awayMessages[userId] = awayMsgObj;
+    $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
+  });
+
+  $('#removeAwayButton').click(function(){
+    var userId = $('#pmNamesDroplist option:selected').val();
+
+    if (awayMessages[userId] !== undefined){
+      awayMessages[userId].message = "";
+      $("#pmNamesDroplist option:selected").css("background-color", "");
+      document.getElementById("awayMessageTextbox").value = "";
+    }
+  });
 }
 
 /****************************************************************************
@@ -447,10 +484,6 @@ function populateSettingsDialog(){
 
   if( (pingSettings.flags & 32) > 0 ){
     document.getElementById("roomLinksDisable").checked = true;
-  }
-
-  if( (pingSettings.flags & 64) > 0 ){
-    document.getElementById("pmTextColorsCheckbox").checked = true;
   }
 
   if( (pingSettings.flags & 128) > 0){
@@ -598,6 +631,17 @@ function saveChatSettings(){
   console.log('As seen in cookie: ', settings_array.join('|'));
 }
 
+/****************************************************************************
+ * @brief Requests the server to get a username based on the ID
+ * @param user_id - ID of username
+ ****************************************************************************/
+function getUserName(user_id){
+  console.log('RPH Tools - Fetching name from ID ', user_id);
+  getUserById(user_id, function(User){
+    $('#pmNamesDroplist').append('<option value="' + user_id + '">' +
+       User.props.name + '</option>');
+  });
+}
 /****************************************************************************
  *                   RANDOM NUMBER GENERATOR FUNCTIONS
  ****************************************************************************/
@@ -792,9 +836,6 @@ function BlockingSetup(){
     UserChangeIgnore(userId, false);
     names.remove(names.selectedIndex);
     blockedUsers.splice(blockedUsers.indexOf(userId),1);
-
-    console.log('RPH Tools - Unblocking user', userId);
-    console.log('RPH Tools - Blocked users', blockedUsers);
   });
 }
 
@@ -807,7 +848,6 @@ function UserChangeIgnore(UserId, Ignore){
   getUserById(UserId, function(User){
     User.blocked = Ignore;
   });
-  console.log('RPH Tools - Changing ignore settings', UserId, Ignore);
 }
 
 /****************************************************************************
@@ -833,9 +873,7 @@ function blockUser(User){
  *            a function in a loop.
  ****************************************************************************/
 function blockUserById(userID){
-  console.log('RPH Tools - Blocked ID ', userID);
   getUserById(userID, function(User){
-    console.log('RPH Tools - Block loading, blocking user', User);
     blockUser(User);
   });
 }
@@ -849,8 +887,6 @@ function saveBlockSettings(){
   console.log('RPH Tools - Saving ignore settings');
   blockedUsersJoined = blockedUsers.join(',');
   setCookie(cookie_name, blockedUsersJoined, 30);
-  console.log('Cookie name: ', cookie_name);
-  console.log('As seen in cookie: ', blockedUsersJoined);
 }
 
 /****************************************************************************
@@ -860,10 +896,9 @@ function loadBlockSettings(){
   var cookie_name = 'rphTools_IgnoreSettings';
   var blockedIds_cookieData = getCookie(cookie_name);
 
-  console.log('RPH Tools - Getting blocked IDs');
   if(blockedIds_cookieData !== undefined){
     var blockedArray = blockedIds_cookieData.split(',');
-    console.log('RPH Tools - Blocked IDs found - ', blockedArray);
+    console.log('RPH Tools - Blocked IDs found');
     for (var i = 0; i < blockedArray.length; i++){
       if(blockedArray[i] !== "")
       {
@@ -988,18 +1023,15 @@ function setupPMFunctions(){
         removeRoomLinksInPM();
       }
 
-      /* Adding user's color. */
-      if (pingSettings.flags & 64){
-        addUserColorInPM(fromUser);
-      }
-
       /* Send away message. */
-      var away_msg = document.getElementById('awayMessageTextbox').value;
-      if ((tempSettings & 1) > 0 && away_msg.length > 0){
-        usedPmAwayMsg = true;
-        sendToSocket('pm', {'from':data.from, 'to':data.to, 'msg':away_msg, 'target':'all'});
+      if(awayMessages[data.from] !== undefined){
+        if(awayMessages[data.from].message !== ""){
+          var awayMsg = awayMessages[data.from].message;
+          console.log('RPH Tools: Away message on the away', awayMsg);
+          awayMessages[data.from].usedPmAwayMsg = true;
+          sendToSocket('pm', {'from':data.from, 'to':data.to, 'msg':awayMsg, 'target':'all'});
+        }
       }
-
     });
   });
 
@@ -1010,16 +1042,16 @@ function setupPMFunctions(){
         removeRoomLinksInPM();
       }
 
-      /* Adding user's color. */
-      if (pingSettings.flags & 64){
-        addUserColorInPM(fromUser);
+      if(awayMessages[data.from] !== undefined){
+        if(awayMessages[data.from].usedPmAwayMsg === false){
+          awayMessages[data.from].message = "";
+          $('#pmNamesDroplist option').filter(function(){
+            return this.value == data.from;
+          }).css("background-color", "");
+          console.log('RPH Tools: User is no longer away', data.from);
+        }
+        awayMessages[data.from].usedPmAwayMsg = false;
       }
-
-      if (usedPmAwayMsg === false){
-        tempSettings &= ~1;
-        document.getElementById("pmAwayMessageCheckBox").checked = false;
-      }
-      usedPmAwayMsg = false;
     });
   });
 }
