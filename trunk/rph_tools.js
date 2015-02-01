@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name       RPH Tools Test
+// @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    1.0.1
+// @version    1.1.0
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -17,9 +17,9 @@
 /*jshint bitwise: false*/
 /*global $:false */
 
-// Object to hold the audio.
-var snd = null;
-
+/*****************************************************************************
+ * Variables for persistent storage
+ /***************************************************************************/
 // Array that holds all of the user name settings. The settings itself are
 // stored in a JSON like object.
 // "id":          ID number of the user name
@@ -35,7 +35,7 @@ var snd = null;
 //                3 - Use exact matching
 //                4 - Case sensitive matching
 //                5 - Remove room links in chat.
-//                6 - Free
+//                6 - Available
 //                7 - Remove icons in chat
 var pingSettings = {
   "pings"     : "",
@@ -44,9 +44,11 @@ var pingSettings = {
   "highlight" : "#FFA",
   "flags"     : 32};
 
-// "tempSettings": Bitmask of temporary settings
-// 0 - Away message.
-var tempSettings = 0;
+var blockedUsers = [];
+
+/*****************************************************************************
+ * Variables for session storage
+ /***************************************************************************/
 
 // Object for dialog box
 var settingsTool = {state: false};
@@ -58,13 +60,18 @@ var aboutHelpTool = {state: false};
 
 var validSettings = true;
 
+// Object to hold the audio.
+var snd = null;
+
+var awayMessages = {};
+
 // HTML code to be injected into the chat.
 var html = '\
   <div id="settingsBox" style="display: none; position: absolute; top: 35px; z-index: 9999999; height: 360px; width: 480px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.7); right: 85px; background: url(&quot;http://www.rphaven.com/css/img/aero-bg.png&quot;) repeat scroll 0px 0px transparent; padding: 5px;" left="">\
     <h3 style="text-align: center; color:#000;">RPH Tools</h3>\
     <div id="settingsContainer" style="height: 330px; width: 100%; overflow: auto; background: rgb(51, 51, 51); padding: 10px; border-radius: 5px; font-size: 0.8em;">\
       <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="pingHeader">Chat room and PM options</h3>\
-      <form id="ping_form" style="display:none;">\
+      <div id="ping_form" style="display:none;">\
         <p><strong>User text color</strong></p>\
         <p>Enter a user name and text color (RGB hex value with hashtag):</p>\
         <p>Value for each channel cannot exceed D2 for 6 characters or D for 3.</p>\
@@ -93,19 +100,21 @@ var html = '\
         <br><br><hr>\
         <p><strong>PM options</strong></p><br />\
         <p>Away message:</p>\
-        <p>Select a name to have an away message for (names with a message will be highlighted)</p>\
+        <p>Select a name to be away, set its away message, then press "Enable". To\
+           turn off away messages for that name, select it and press "Disable". Names\
+           that are away will be marked.</p>\
         <select style="width: 300px;" id="pmNamesDroplist" size="5"></select><br><br>\
         <input style="width: 400px;" type="text" id="awayMessageTextbox" name="awayMessageTextbox" maxlength="300" placeholder="Away message...">\
-        <button type="button" id="setAwayButton">Set</button>\
-        <button type="button" id="removeAwayButton">Remove</button>\
+        <button type="button" id="setAwayButton">Enable</button>\
+        <button type="button" id="removeAwayButton">Disable</button>\
         <br><br><hr>\
         <p><strong>Extra options</strong></p><br />\
         <input style="width: 40px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable" checked>No room links\
         <input style="width: 40px;" type="checkbox" id="imgIconDisable" name="imgIconDisable">No image icons (in chat)\
-      </form>\
+      </div>\
       <br />\
       <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="diceHeader">Random Number Generators</h3>\
-      <form id="diceForm" style="display:none;">\
+      <div id="diceForm" style="display:none;">\
         <p><strong>Coin tosser</strong></p>\
         <br />\
         <button type="button" id="coinTossButton">Flip it!</button>\
@@ -127,10 +136,10 @@ var html = '\
         <input style="width: 200px;" type="number" id="rngMaxNumber" name="rngMaxNumber" max="4294967295" min="-4294967296" value="10">\
         <br />\
         <button type="button" id="rngButton">Randomize!</button>\
-      </form>\
+      </div>\
       <br />\
       <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="blockHeader">Friends/Blocking</h3>\
-      <form id="blockForm" style="display:none;">\
+      <div id="blockForm" style="display:none;">\
         <br>\
         <p>Enter user name to block.</p>\
         <input style="width: 400px;" type="text" id="nameCheckTextbox" name="nameCheckTextbox" placeholder="User to block">\
@@ -140,10 +149,10 @@ var html = '\
         <select style="width: 100%;" size="5" id="blockedDropList"></select>\
         <br />\
         <button type="button" id="unblockButton">Unblock</button>\
-      </form>\
+      </div>\
       <br />\
       <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="moddingHeader">Mod Commands</h3>\
-      <form id="moddingForm" style="display:none;">\
+      <div id="moddingForm" style="display:none;">\
         <br>\
         <p>This will only work if you\'re actually a mod and you own the user name.</p>\
         <br />\
@@ -164,22 +173,19 @@ var html = '\
         <button type="button" id="unbanButton">Unban</button>\
         <button style="margin-left: 30px;"type="button" id="modButton">Mod</button>\
         <button type="button" id="unmodButton">Unmod</button>\
-      </form>\
+      </div>\
       <br />\
       <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="aboutHelpHeader">About/Help</h3>\
-      <form id="aboutHelpForm" style="display:none;">\
+      <div id="aboutHelpForm" style="display:none;">\
         <br><p>Click on the "More Settings" button again to save your settings!</p>\
         <p>You may need to refresh the chat for the settings to take effect.</p>\
         <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
-        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.0.1</p>\
+        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.1.0b</p>\
         <br>\
-      </form>\
+      </div>\
     </div>\
   </div>';
 
-var blockedUsers = [];
-var usedPmAwayMsg = false;
-var awayMessages = {};
 /* If this doesn't print, something happened with the global vars */
 console.log('RPH Tools script start');
 
@@ -204,16 +210,42 @@ $(function(){
   chatSocket.on('confirm-room-join', function(data){
     doRoomJoinSetup(data);
   });
+  setupPMFunctions();
 
+  /* Set up HTML injection. */
   $('#random-quote').hide();
   $('#top p.right').prepend('<a class="pings settings">More Settings</a>|');
   $('body').append(html);
   settingsTool.box = $('#settingsBox');
   settingsTool.button = $('#top a.pings');
 
-  setupPMFunctions();
-  loadChatSettings();
-  loadBlockSettings();
+  /* Load settings. */
+
+  if (typeof(storage) != "undefined"){
+
+    if (localStorage.getItem("chatSettings") !== null){
+      pingSettings = JSON.parse(localStorage.getItem("chatSettings"));
+      console.log("RPH Tools - Chat settings: ", pingSettings);
+    }
+    else{ /* Fallback to cookies */
+      loadChatSettings();
+    }
+
+    if (localStorage.getItem("blockedUsers") !== null){
+      blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
+      console.log("RPH Tools - Blocked settings: ", blockedUsers);
+
+      for (var i = 0; i < blockedUsers.length; i++){
+        if(blockedUsers[i] !== "")
+        {
+          blockUserById(parseInt(blockedUsers[i]));
+        }
+      }
+    }
+    else{ /* Fallback to cookies */
+      loadBlockSettings();
+    }
+  }
 
   console.log('RPH Tools - Init complete, setting up dialog box');
   SetUpToolsDialog();
@@ -410,18 +442,12 @@ function ChatSettingsSetup(){
                 pingSettings.flags);
   });
 
-  $('#pmAwayMessageCheckBox').change(function(){
-    tempSettings ^= 1;
-    console.log("RPH Tools - PM away message option changed. Flags are now: ",
-                tempSettings);
-  });
-
   $('#pmNamesDroplist').change(function(){
     var userId = $('#pmNamesDroplist option:selected').val();
 
     if (awayMessages[userId] !== undefined){
       var message = awayMessages[userId].message;
-      document.getElementById("awayMessageTextbox").value = awayMessages[userId].message;
+      document.getElementById("awayMessageTextbox").value = message;
     }
     else{
       document.getElementById("awayMessageTextbox").value = "";
@@ -431,19 +457,27 @@ function ChatSettingsSetup(){
   $('#setAwayButton').click(function(){
     var awayMsgObj = {
       "usedPmAwayMsg" : false,
-      "message"       : ""
+      "message"       : "",
+      "enabled"       : true
     };
     var userId = $('#pmNamesDroplist option:selected').val();
+    var name = $("#pmNamesDroplist option:selected").html();
     awayMsgObj.message = document.getElementById('awayMessageTextbox').value;
     awayMessages[userId] = awayMsgObj;
+
+    $("#pmNamesDroplist option:selected").html("[Away]" + name);
     $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
+    $("#pmNamesDroplist option:selected").prop("selected", false);
   });
 
   $('#removeAwayButton').click(function(){
     var userId = $('#pmNamesDroplist option:selected').val();
 
     if (awayMessages[userId] !== undefined){
-      awayMessages[userId].message = "";
+      var name = $("#pmNamesDroplist option:selected").html();
+
+      awayMessages[userId].enabled = false;
+      $("#pmNamesDroplist option:selected").html(name.substring(6,name.length));
       $("#pmNamesDroplist option:selected").css("background-color", "");
       document.getElementById("awayMessageTextbox").value = "";
     }
@@ -488,10 +522,6 @@ function populateSettingsDialog(){
 
   if( (pingSettings.flags & 128) > 0){
     document.getElementById("imgIconDisable").checked = true;
-  }
-
-  if( (tempSettings & 1) > 0 ){
-    document.getElementById("pmAwayMessageCheckBox").checked = true;
   }
 
   // Prevents populating the dialogue from counting as a change.
@@ -615,20 +645,8 @@ function loadChatSettings(){
  ****************************************************************************/
 
 function saveChatSettings(){
-  var settings_array = [];
-  var settings_joined = "";
-  var cookie_name = "rphTools_PingSettings";
-  console.log('RPH Tools - Saving ping settings');
-  for ( var key in pingSettings){
-    if(pingSettings.hasOwnProperty(key)){
-      settings_array.push(pingSettings[key]);
-    }
-  }
-  settings_joined = settings_array.join('|');
-  setCookie(cookie_name, settings_joined, 30);
-  console.log('Cookie name: ', cookie_name);
-  console.log('As an array: ', settings_array);
-  console.log('As seen in cookie: ', settings_array.join('|'));
+  console.log("RPH Tools - Saving chat settings... ", JSON.stringify(pingSettings));
+  localStorage.setItem("chatSettings", JSON.stringify(pingSettings));
 }
 
 /****************************************************************************
@@ -882,11 +900,8 @@ function blockUserById(userID){
  * @brief:   Saves the blocked users list into a cookie.
  ****************************************************************************/
 function saveBlockSettings(){
-  var blockedUsersJoined = "";
-  var cookie_name = "rphTools_IgnoreSettings";
-  console.log('RPH Tools - Saving ignore settings');
-  blockedUsersJoined = blockedUsers.join(',');
-  setCookie(cookie_name, blockedUsersJoined, 30);
+  console.log("RPH Tools - Saving blocked settings... ", JSON.stringify(blockedUsers))
+  localStorage.setItem("blockedUsers", JSON.stringify(blockedUsers));
 }
 
 /****************************************************************************
@@ -1025,7 +1040,7 @@ function setupPMFunctions(){
 
       /* Send away message. */
       if(awayMessages[data.from] !== undefined){
-        if(awayMessages[data.from].message !== ""){
+        if(awayMessages[data.from].enabled === true){
           var awayMsg = awayMessages[data.from].message;
           console.log('RPH Tools: Away message on the away', awayMsg);
           awayMessages[data.from].usedPmAwayMsg = true;
@@ -1044,7 +1059,7 @@ function setupPMFunctions(){
 
       if(awayMessages[data.from] !== undefined){
         if(awayMessages[data.from].usedPmAwayMsg === false){
-          awayMessages[data.from].message = "";
+          awayMessages[data.from].enabled = false;
           $('#pmNamesDroplist option').filter(function(){
             return this.value == data.from;
           }).css("background-color", "");
@@ -1365,19 +1380,6 @@ function removeRoomLinksInPM(){
     fullMessage.innerHTML = fullMessage.innerHTML.replace(new RegExp(links[i].outerHTML, 'g'),
                                                           links[i].innerHTML);
   }
-}
-
-/****************************************************************************
- * @brief:    Adds color to the text to an incoming PM
- * @param:    fromUser - User object of the person who sent the PM
- ****************************************************************************/
-function addUserColorInPM(fromUser){
-  var userColor = fromUser.props.color;
-  var fullMessage = $('div#pm-msgs.inner').find('p');
-  fullMessage = fullMessage[fullMessage.length-1];
-  fullMessage.innerHTML = '<p style="color: #' + userColor + ';">' + fullMessage.innerHTML + '</p>';
-
-  console.log('RPH Tools - Adding color to PM', userColor, fromUser);
 }
 
 /****************************************************************************
