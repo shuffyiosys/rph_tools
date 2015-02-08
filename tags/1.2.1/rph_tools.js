@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    1.2.3
+// @version    1.2.1
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -56,7 +56,6 @@ var pingTool = {state: false};
 var diceTool = {state: false};
 var blockTool = {state: false};
 var modTool = {state: false};
-var importExport = {state: false};
 var aboutHelpTool = {state: false};
 
 var validSettings = true;
@@ -176,22 +175,12 @@ var html = '\
         <button type="button" id="unmodButton">Unmod</button>\
       </div>\
       <br />\
-      <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="importExportHeader">Import/Export Settings</h3>\
-      <div id="importExportForm" style="display:none;">\
-        <br />\
-        <p>Press "Export" to export savable settings. To import settings, past them into the text box and press "Import".</p><br />\
-        <textarea name="importExportText" id="importExportTextarea" style="background: rgb(255, 255, 255); height: 250px; width: 390px;"></textarea>\
-        <button type="button" id="exportButton">Export</button>\
-        <button style="margin-left: 288px;" type="button" id="importButton">Import</button>\
-        <br>\
-      </div>\
-      <br />\
       <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="aboutHelpHeader">About/Help</h3>\
       <div id="aboutHelpForm" style="display:none;">\
         <br><p>Click on the "More Settings" button again to save your settings!</p>\
         <p>You may need to refresh the chat for the settings to take effect.</p>\
         <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
-        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.3</p>\
+        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.1</p>\
         <br>\
       </div>\
     </div>\
@@ -242,13 +231,13 @@ $(function(){
     }
 
     if (localStorage.getItem("blockedUsers") !== null){
-      var temp_blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
-      console.log("RPH Tools - Blocked settings: ", temp_blockedUsers);
+      blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
+      console.log("RPH Tools - Blocked settings: ", blockedUsers);
 
-      for (var i = 0; i < temp_blockedUsers.length; i++){
-        if(temp_blockedUsers[i] !== "")
+      for (var i = 0; i < blockedUsers.length; i++){
+        if(blockedUsers[i] !== "")
         {
-          blockUserById(parseInt(temp_blockedUsers[i]));
+          blockUserById(parseInt(blockedUsers[i]));
         }
       }
     }
@@ -294,7 +283,6 @@ function SetUpToolsDialog(){
   DiceRollSetup();
   BlockingSetup();
   ModdingSetup();
-  ImportExportSetup();
 
   $('#aboutHelpHeader').click(function(){
     if(aboutHelpTool.state === true){
@@ -449,27 +437,19 @@ function ChatSettingsSetup(){
   });
 
   $('#setAwayButton').click(function(){
+    var awayMsgObj = {
+      "usedPmAwayMsg" : false,
+      "message"       : "",
+      "enabled"       : true
+    };
     var userId = $('#pmNamesDroplist option:selected').val();
     var name = $("#pmNamesDroplist option:selected").html();
+    awayMsgObj.message = document.getElementById('awayMessageTextbox').value;
+    awayMessages[userId] = awayMsgObj;
 
-    if (awayMessages[userId] !== undefined){
-      if(awayMessages[userId].enabled === true){
-        awayMessages[userId].message = document.getElementById('awayMessageTextbox').value;
-      }
-    }
-    else{
-      var awayMsgObj = {
-        "usedPmAwayMsg" : false,
-        "message"       : "",
-        "enabled"       : true
-      };
-      awayMsgObj.message = document.getElementById('awayMessageTextbox').value;
-      awayMessages[userId] = awayMsgObj;
-
-      $("#pmNamesDroplist option:selected").html("[Away]" + name);
-      $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
-      $("#pmNamesDroplist option:selected").prop("selected", false);
-    }
+    $("#pmNamesDroplist option:selected").html("[Away]" + name);
+    $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
+    $("#pmNamesDroplist option:selected").prop("selected", false);
   });
 
   $('#removeAwayButton').click(function(){
@@ -503,8 +483,6 @@ function populateSettingsDialog(){
   document.getElementById("pingItalicsEnable").checked = false;
   document.getElementById("pingExactMatch").checked = false;
   document.getElementById("pingCaseSense").checked = false;
-  document.getElementById("roomLinksDisable").checked = false;
-  document.getElementById("imgIconDisable").checked = false;
 
   if( (pingSettings.flags & 2) > 0 ){
     document.getElementById("pingBoldEnable").checked = true;
@@ -735,7 +713,7 @@ function DiceRollSetup(){
  ****************************************************************************/
 function TossCoin(){
   var class_name = $('li.active')[0].className.split(" ");
-  var room_name = $('li.active').find("span:first").text();
+  var room_name = $('li.active')[0].textContent.slice(0,-1);
   var this_room = getRoom(room_name);
   var userID = parseInt(class_name[2].substring(0,6));
   var new_msg = '(( Coin toss: ';
@@ -756,7 +734,7 @@ function TossCoin(){
  ****************************************************************************/
 function RollDice(){
   var class_name = $('li.active')[0].className.split(" ");
-  var room_name = $('li.active').find("span:first").text();
+  var room_name = $('li.active')[0].textContent.slice(0,-1);
   var this_room = getRoom(room_name);
   var userID = parseInt(class_name[2].substring(0,6));
   var dieNum = parseInt($('#diceNum').val());
@@ -776,7 +754,7 @@ function RollDice(){
  ****************************************************************************/
 function GetRandomNum(){
   var class_name = $('li.active')[0].className.split(" ");
-  var room_name = $('li.active').find("span:first").text();
+  var room_name = $('li.active')[0].textContent.slice(0,-1);
   var this_room = getRoom(room_name);
   var userID = parseInt(class_name[2].substring(0,6));
   var minNum = parseInt($('#rngMinNumber').val());
@@ -898,7 +876,6 @@ function saveBlockSettings(){
   localStorage.removeItem("blockedUsers");
   localStorage.setItem("blockedUsers", JSON.stringify(blockedUsers));
   console.log("RPH Tools - Blocked users", localStorage.getItem("blockedUsers"));
-  console.log("RPH Tools - Blocked users locally", blockedUsers);
 }
 
 /****************************************************************************
@@ -1010,82 +987,6 @@ function modAction(action){
     console.log('RPH Tools - ', modMessage);
   }
 }
-
-/****************************************************************************
- *                        IMPORT/EXPORT FUNCTIONS
- ****************************************************************************/
-/****************************************************************************
- * @brief:    Sets up callback functions for importing/exporting settings
- ****************************************************************************/
-function ImportExportSetup(){
-  $('#importExportHeader').click(function(){
-    if(importExport.state === true){
-      $('#importExportForm').hide();
-      importExport.state = false;
-    }
-    else{
-      $('#importExportForm').show();
-      importExport.state = true;
-    }
-  });
-
-  $('#importButton').click(function(){
-    ImportSettings();
-  });
-
-  $('#exportButton').click(function(){
-    var chatSettings_str = JSON.stringify(pingSettings);
-    var blockedUsers_str = JSON.stringify(blockedUsers);
-    document.getElementById("importExportTextarea").value = chatSettings_str + "|" + blockedUsers_str;
-  });
-  console.log('RPH Tools - Import/Export setup done.');
-}
-
-/****************************************************************************
- * @brief:    Imports settings from the textarea.
- ****************************************************************************/
-function ImportSettings(){
-  var settings_str = document.getElementById("importExportTextarea").value;
-  var chatSettings_str = '';
-  var blockedUsers_str = '';
-  var temp_pingSettings;
-  var temp_blockedUsers;
-  var delimiter = settings_str.indexOf("|");
-
-  try{
-    chatSettings_str = settings_str.substring(0, delimiter);
-    blockedUsers_str = settings_str.substring(delimiter+1, settings_str.length);
-    temp_pingSettings = JSON.parse(chatSettings_str);
-    temp_blockedUsers = JSON.parse(blockedUsers_str);
-  }
-  catch (err){
-    console.log('RPH Tools - Error importing settings');
-  }
-
-  /* Time to do a lot of checking here. */
-  if( chatSettings_str === '' || blockedUsers_str === '' ||
-      temp_pingSettings === undefined || temp_blockedUsers === undefined )
-  {
-    mark_problem("importExportTextarea", true);
-  }
-  else{
-    pingSettings = temp_pingSettings;
-    blockedUsers = [];
-    populateSettingsDialog();
-    saveChatSettings(pingSettings);
-
-    $('#blockedDropList').find('option').remove().end();
-    for (var i = 0; i < temp_blockedUsers.length; i++){
-      if(temp_blockedUsers[i] !== "")
-      {
-        blockUserById(temp_blockedUsers[i]);
-      }
-    }
-    console.log("RPH Tools - blocked list from import", blockedUsers);
-    mark_problem("importExportTextarea", false);
-  }
-}
-
 /****************************************************************************
  *                              PM FUNCTIONS
  ****************************************************************************/
@@ -1154,7 +1055,7 @@ function doRoomJoinSetup(room){
       return;
     }
     postMessage(thisRoom, data);
-  };
+  }
 
   /* Add the user's name below the room name to differentiate who's in it. */
   var regex = new RegExp(' [0-9]*_', '');
@@ -1163,7 +1064,7 @@ function doRoomJoinSetup(room){
   charID = charID.substring(1,charID.length-1);
 
   getUserById(charID, function(User){
-    var newTabHtml = '<span>' + room.room + '</span><p style="font-size: x-small; position: absolute; top: 12px;">' + User.props.name + '</p>';
+    var newTabHtml = room.room + '<p style="font-size: x-small; position: absolute; top: 12px;">' + User.props.name + '</p>';
     thisRoom.$tabs[tabsLen-1].html(newTabHtml);
     $('<a class="close ui-corner-all">x</a>').on('click', function(ev){
       ev.stopPropagation();

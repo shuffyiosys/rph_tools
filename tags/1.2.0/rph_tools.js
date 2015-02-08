@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    1.2.3
+// @version    1.2.0
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -56,7 +56,6 @@ var pingTool = {state: false};
 var diceTool = {state: false};
 var blockTool = {state: false};
 var modTool = {state: false};
-var importExport = {state: false};
 var aboutHelpTool = {state: false};
 
 var validSettings = true;
@@ -176,22 +175,12 @@ var html = '\
         <button type="button" id="unmodButton">Unmod</button>\
       </div>\
       <br />\
-      <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="importExportHeader">Import/Export Settings</h3>\
-      <div id="importExportForm" style="display:none;">\
-        <br />\
-        <p>Press "Export" to export savable settings. To import settings, past them into the text box and press "Import".</p><br />\
-        <textarea name="importExportText" id="importExportTextarea" style="background: rgb(255, 255, 255); height: 250px; width: 390px;"></textarea>\
-        <button type="button" id="exportButton">Export</button>\
-        <button style="margin-left: 288px;" type="button" id="importButton">Import</button>\
-        <br>\
-      </div>\
-      <br />\
       <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="aboutHelpHeader">About/Help</h3>\
       <div id="aboutHelpForm" style="display:none;">\
         <br><p>Click on the "More Settings" button again to save your settings!</p>\
         <p>You may need to refresh the chat for the settings to take effect.</p>\
         <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
-        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.3</p>\
+        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.0</p>\
         <br>\
       </div>\
     </div>\
@@ -211,6 +200,7 @@ console.log('RPH Tools script start');
 $(function(){
   _on('accounts', function(){
     var users = account.users;
+    console.log('RPH Pings - User account retreived.', account.users);
 
     for(i = 0; i < users.length; i++){
       getUserName(users[i]);
@@ -218,6 +208,7 @@ $(function(){
   });
 
   chatSocket.on('confirm-room-join', function(data){
+    console.log('RPH Tools - Joined room!');
     doRoomJoinSetup(data);
   });
   setupPMFunctions();
@@ -242,13 +233,13 @@ $(function(){
     }
 
     if (localStorage.getItem("blockedUsers") !== null){
-      var temp_blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
-      console.log("RPH Tools - Blocked settings: ", temp_blockedUsers);
+      blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
+      console.log("RPH Tools - Blocked settings: ", blockedUsers);
 
-      for (var i = 0; i < temp_blockedUsers.length; i++){
-        if(temp_blockedUsers[i] !== "")
+      for (var i = 0; i < blockedUsers.length; i++){
+        if(blockedUsers[i] !== "")
         {
-          blockUserById(parseInt(temp_blockedUsers[i]));
+          blockUserById(parseInt(blockedUsers[i]));
         }
       }
     }
@@ -294,7 +285,6 @@ function SetUpToolsDialog(){
   DiceRollSetup();
   BlockingSetup();
   ModdingSetup();
-  ImportExportSetup();
 
   $('#aboutHelpHeader').click(function(){
     if(aboutHelpTool.state === true){
@@ -331,6 +321,7 @@ function ChatSettingsSetup(){
   });
 
   $('#pingNames').blur(function(){
+    console.log("RPH Tools - Ping names changed.");
     pingSettings.pings = $('#pingNames').val().replace('\n','').replace('\r','');
     pingSettings.flags |= 1;
   });
@@ -347,6 +338,7 @@ function ChatSettingsSetup(){
       pingSettings.flags |= 1;
       mark_problem('pingURL', false);
       validSettings = true;
+      console.log("RPH Tools - Ping URL changed.");
     }
   });
 
@@ -361,6 +353,7 @@ function ChatSettingsSetup(){
       pingSettings.flags |= 1;
       mark_problem('pingTextColor', false);
       validSettings = true;
+      console.log("RPH Tools - Ping text color changed.");
     }
   });
 
@@ -375,27 +368,36 @@ function ChatSettingsSetup(){
       pingSettings.flags |= 1;
       mark_problem('pingHighlightColor', false);
       validSettings = true;
+      console.log("RPH Tools - Ping highlight color changed");
     }
   });
 
   $('#pingBoldEnable').change(function(){
     pingSettings.flags ^= 2;
     pingSettings.flags |= 1;
+    console.log("RPH Tools - Ping text bold changed. Flags are now: ",
+                pingSettings.flags);
   });
 
   $('#pingItalicsEnable').change(function(){
     pingSettings.flags ^= 4;
     pingSettings.flags |= 1;
+    console.log("RPH Tools - Ping Text italicize changed. Flags are now: ",
+                pingSettings.flags);
   });
 
   $('#pingExactMatch').change(function(){
     pingSettings.flags ^= 8;
     pingSettings.flags |= 1;
+    console.log("RPH Tools - Ping Exact match changed. Flags are now: ",
+                pingSettings.flags);
   });
 
   $('#pingCaseSense').change(function(){
     pingSettings.flags ^= 16;
     pingSettings.flags |= 1;
+    console.log("RPH Tools - Ping Case sensitivity changed. Flags are now: ",
+                pingSettings.flags);
   });
 
   $('#userNameTextColorButton').click(function(){
@@ -419,6 +421,7 @@ function ChatSettingsSetup(){
       if(userToEdit !== null){
         mark_problem('userNameTextbox', false);
         sendToSocket('modify', {userid:userToEdit.props.id, color:text_color});
+        console.log('RPH Tools - Modified user props:', userToEdit, text_color);
       }
       else{
         mark_problem('userNameTextbox', true);
@@ -429,11 +432,15 @@ function ChatSettingsSetup(){
   $('#roomLinksDisable').change(function(){
     pingSettings.flags ^= 32;
     pingSettings.flags |= 1;
+    console.log("RPH Tools - Room linking option changed. Flags are now: ",
+                pingSettings.flags);
   });
 
   $('#imgIconDisable').change(function(){
     pingSettings.flags ^= 128;
     pingSettings.flags |= 1;
+    console.log("RPH Tools - Image icon posting settings changed. Flags are now: ",
+                pingSettings.flags);
   });
 
   $('#pmNamesDroplist').change(function(){
@@ -449,27 +456,19 @@ function ChatSettingsSetup(){
   });
 
   $('#setAwayButton').click(function(){
+    var awayMsgObj = {
+      "usedPmAwayMsg" : false,
+      "message"       : "",
+      "enabled"       : true
+    };
     var userId = $('#pmNamesDroplist option:selected').val();
     var name = $("#pmNamesDroplist option:selected").html();
+    awayMsgObj.message = document.getElementById('awayMessageTextbox').value;
+    awayMessages[userId] = awayMsgObj;
 
-    if (awayMessages[userId] !== undefined){
-      if(awayMessages[userId].enabled === true){
-        awayMessages[userId].message = document.getElementById('awayMessageTextbox').value;
-      }
-    }
-    else{
-      var awayMsgObj = {
-        "usedPmAwayMsg" : false,
-        "message"       : "",
-        "enabled"       : true
-      };
-      awayMsgObj.message = document.getElementById('awayMessageTextbox').value;
-      awayMessages[userId] = awayMsgObj;
-
-      $("#pmNamesDroplist option:selected").html("[Away]" + name);
-      $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
-      $("#pmNamesDroplist option:selected").prop("selected", false);
-    }
+    $("#pmNamesDroplist option:selected").html("[Away]" + name);
+    $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
+    $("#pmNamesDroplist option:selected").prop("selected", false);
   });
 
   $('#removeAwayButton').click(function(){
@@ -503,8 +502,6 @@ function populateSettingsDialog(){
   document.getElementById("pingItalicsEnable").checked = false;
   document.getElementById("pingExactMatch").checked = false;
   document.getElementById("pingCaseSense").checked = false;
-  document.getElementById("roomLinksDisable").checked = false;
-  document.getElementById("imgIconDisable").checked = false;
 
   if( (pingSettings.flags & 2) > 0 ){
     document.getElementById("pingBoldEnable").checked = true;
@@ -551,9 +548,15 @@ function testPingURL(PingURL){
     }
     else if(regexp.test(PingURL) === true)
     {
+      console.log('url ext ' + pingExt );
       if(pingExt == ".wav" || pingExt == ".ogg" || pingExt == ".mp3"){
+        console.log('RPH Tools - Ping URL is good.');
         match = true;
       }
+    }
+    else
+    {
+      console.log('RPH Tools - Ping URL is bad');
     }
     return match;
 }
@@ -587,6 +590,7 @@ function testTextColorRange(TextColor){
     blue = parseInt(rawHex.substring(2,3), 16);
 
     if ((red <= 13) && (green <= 13) && (blue <= 13)) {
+      console.log('RPH Tools - Text color check passed (3 chars)');
       return true;
     }
   }
@@ -595,6 +599,7 @@ function testTextColorRange(TextColor){
     green = parseInt(rawHex.substring(2,4), 16);
     blue = parseInt(rawHex.substring(4,6), 16);
     if ((red <= 210) && (green <= 210) && (blue <= 210)){
+      console.log('RPH Tools - Text color check passed');
       return true;
     }
   }
@@ -643,9 +648,8 @@ function loadChatSettings(){
  ****************************************************************************/
 
 function saveChatSettings(){
-  localStorage.removeItem("chatSettings");
+  console.log("RPH Tools - Saving chat settings... ", JSON.stringify(pingSettings));
   localStorage.setItem("chatSettings", JSON.stringify(pingSettings));
-  console.log("RPH Tools - Saving chat settings... ", localStorage.getItem("chatSettings"));
 }
 
 /****************************************************************************
@@ -653,6 +657,7 @@ function saveChatSettings(){
  * @param user_id - ID of username
  ****************************************************************************/
 function getUserName(user_id){
+  console.log('RPH Tools - Fetching name from ID ', user_id);
   getUserById(user_id, function(User){
     $('#pmNamesDroplist').append('<option value="' + user_id + '">' +
        User.props.name + '</option>');
@@ -735,7 +740,7 @@ function DiceRollSetup(){
  ****************************************************************************/
 function TossCoin(){
   var class_name = $('li.active')[0].className.split(" ");
-  var room_name = $('li.active').find("span:first").text();
+  var room_name = $('li.active')[0].textContent.slice(0,-1);
   var this_room = getRoom(room_name);
   var userID = parseInt(class_name[2].substring(0,6));
   var new_msg = '(( Coin toss: ';
@@ -756,7 +761,7 @@ function TossCoin(){
  ****************************************************************************/
 function RollDice(){
   var class_name = $('li.active')[0].className.split(" ");
-  var room_name = $('li.active').find("span:first").text();
+  var room_name = $('li.active')[0].textContent.slice(0,-1);
   var this_room = getRoom(room_name);
   var userID = parseInt(class_name[2].substring(0,6));
   var dieNum = parseInt($('#diceNum').val());
@@ -776,7 +781,7 @@ function RollDice(){
  ****************************************************************************/
 function GetRandomNum(){
   var class_name = $('li.active')[0].className.split(" ");
-  var room_name = $('li.active').find("span:first").text();
+  var room_name = $('li.active')[0].textContent.slice(0,-1);
   var this_room = getRoom(room_name);
   var userID = parseInt(class_name[2].substring(0,6));
   var minNum = parseInt($('#rngMinNumber').val());
@@ -836,9 +841,9 @@ function BlockingSetup(){
       userToBlock = User;
     });
 
+    console.log('RPH Tools - ', userToBlock);
     if (userToBlock !== null){
       blockUser(userToBlock);
-      saveBlockSettings();
       mark_problem('nameCheckTextbox', false);
     }
     else{
@@ -852,7 +857,6 @@ function BlockingSetup(){
     UserChangeIgnore(userId, false);
     names.remove(names.selectedIndex);
     blockedUsers.splice(blockedUsers.indexOf(userId),1);
-    saveBlockSettings();
   });
 }
 
@@ -876,6 +880,10 @@ function blockUser(User){
   $('#blockedDropList').append('<option value="' + User.props.id + '">' +
                                 User.props.name + '</option>');
   UserChangeIgnore(User.props.id, true);
+  console.log('RPH Tools - Blocking user', User.props.name);
+  console.log('RPH Tools - Blocked users', blockedUsers);
+
+  saveBlockSettings();
 }
 
 /****************************************************************************
@@ -895,10 +903,8 @@ function blockUserById(userID){
  * @brief:   Saves the blocked users list into a cookie.
  ****************************************************************************/
 function saveBlockSettings(){
-  localStorage.removeItem("blockedUsers");
+  console.log("RPH Tools - Saving blocked settings... ", JSON.stringify(blockedUsers));
   localStorage.setItem("blockedUsers", JSON.stringify(blockedUsers));
-  console.log("RPH Tools - Blocked users", localStorage.getItem("blockedUsers"));
-  console.log("RPH Tools - Blocked users locally", blockedUsers);
 }
 
 /****************************************************************************
@@ -921,8 +927,6 @@ function loadBlockSettings(){
   else{
     console.log('RPH Tools - No cookie found for', cookie_name);
   }
-
-  saveBlockSettings();
 }
 /****************************************************************************
  *                      MODDING TOOLS FUNCTIONS
@@ -974,14 +978,23 @@ function modAction(action){
   var target = '';
   var modMessage = ' ';
 
+  console.log('RPH Tools - Mod action parameters',
+              action,
+              document.getElementById("modRoomTextInput").value,
+              document.getElementById("modTargetTextInput").value,
+              document.getElementById("modFromTextInput").value,
+              document.getElementById("modMessageTextInput").value);
+
   getUserByName(document.getElementById("modTargetTextInput").value, function(Target){
     targetId = Target.props.id;
     target = Target.props.name;
+    console.log('RPH Tools - Mod action target: ', Target);
   });
 
   getUserByName(document.getElementById("modFromTextInput").value, function(User){
     userId = User.props.id;
     modMessage += document.getElementById("modMessageTextInput").value;
+    console.log('RPH Tools - User who is issuing action: ', User);
 
     if (action === 'add-mod' || action === 'remove-mod'){
       modMessage = '';
@@ -1010,82 +1023,6 @@ function modAction(action){
     console.log('RPH Tools - ', modMessage);
   }
 }
-
-/****************************************************************************
- *                        IMPORT/EXPORT FUNCTIONS
- ****************************************************************************/
-/****************************************************************************
- * @brief:    Sets up callback functions for importing/exporting settings
- ****************************************************************************/
-function ImportExportSetup(){
-  $('#importExportHeader').click(function(){
-    if(importExport.state === true){
-      $('#importExportForm').hide();
-      importExport.state = false;
-    }
-    else{
-      $('#importExportForm').show();
-      importExport.state = true;
-    }
-  });
-
-  $('#importButton').click(function(){
-    ImportSettings();
-  });
-
-  $('#exportButton').click(function(){
-    var chatSettings_str = JSON.stringify(pingSettings);
-    var blockedUsers_str = JSON.stringify(blockedUsers);
-    document.getElementById("importExportTextarea").value = chatSettings_str + "|" + blockedUsers_str;
-  });
-  console.log('RPH Tools - Import/Export setup done.');
-}
-
-/****************************************************************************
- * @brief:    Imports settings from the textarea.
- ****************************************************************************/
-function ImportSettings(){
-  var settings_str = document.getElementById("importExportTextarea").value;
-  var chatSettings_str = '';
-  var blockedUsers_str = '';
-  var temp_pingSettings;
-  var temp_blockedUsers;
-  var delimiter = settings_str.indexOf("|");
-
-  try{
-    chatSettings_str = settings_str.substring(0, delimiter);
-    blockedUsers_str = settings_str.substring(delimiter+1, settings_str.length);
-    temp_pingSettings = JSON.parse(chatSettings_str);
-    temp_blockedUsers = JSON.parse(blockedUsers_str);
-  }
-  catch (err){
-    console.log('RPH Tools - Error importing settings');
-  }
-
-  /* Time to do a lot of checking here. */
-  if( chatSettings_str === '' || blockedUsers_str === '' ||
-      temp_pingSettings === undefined || temp_blockedUsers === undefined )
-  {
-    mark_problem("importExportTextarea", true);
-  }
-  else{
-    pingSettings = temp_pingSettings;
-    blockedUsers = [];
-    populateSettingsDialog();
-    saveChatSettings(pingSettings);
-
-    $('#blockedDropList').find('option').remove().end();
-    for (var i = 0; i < temp_blockedUsers.length; i++){
-      if(temp_blockedUsers[i] !== "")
-      {
-        blockUserById(temp_blockedUsers[i]);
-      }
-    }
-    console.log("RPH Tools - blocked list from import", blockedUsers);
-    mark_problem("importExportTextarea", false);
-  }
-}
-
 /****************************************************************************
  *                              PM FUNCTIONS
  ****************************************************************************/
@@ -1108,6 +1045,7 @@ function setupPMFunctions(){
       if(awayMessages[data.from] !== undefined){
         if(awayMessages[data.from].enabled === true){
           var awayMsg = awayMessages[data.from].message;
+          console.log('RPH Tools: Away message on the away', awayMsg);
           awayMessages[data.from].usedPmAwayMsg = true;
           sendToSocket('pm', {'from':data.from, 'to':data.to, 'msg':awayMsg, 'target':'all'});
         }
@@ -1128,6 +1066,7 @@ function setupPMFunctions(){
           $('#pmNamesDroplist option').filter(function(){
             return this.value == data.from;
           }).css("background-color", "");
+          console.log('RPH Tools: User is no longer away', data.from);
         }
         awayMessages[data.from].usedPmAwayMsg = false;
       }
@@ -1148,13 +1087,16 @@ function doRoomJoinSetup(room){
   var tabsLen = thisRoom.$tabs.length;
   var className = thisRoom.$tabs[tabsLen-1][0].className;
 
+  console.log('RPH Tools, room class', className);
+
   thisRoom.onMessage = function (data){
     var thisRoom = this;
     if( account.ignores.indexOf(data.userid) !== -1 ){
       return;
     }
+    console.log('onMsg', data);
     postMessage(thisRoom, data);
-  };
+  }
 
   /* Add the user's name below the room name to differentiate who's in it. */
   var regex = new RegExp(' [0-9]*_', '');
@@ -1163,7 +1105,7 @@ function doRoomJoinSetup(room){
   charID = charID.substring(1,charID.length-1);
 
   getUserById(charID, function(User){
-    var newTabHtml = '<span>' + room.room + '</span><p style="font-size: x-small; position: absolute; top: 12px;">' + User.props.name + '</p>';
+    var newTabHtml = room.room + '<p style="font-size: x-small; position: absolute; top: 12px;">' + User.props.name + '</p>';
     thisRoom.$tabs[tabsLen-1].html(newTabHtml);
     $('<a class="close ui-corner-all">x</a>').on('click', function(ev){
       ev.stopPropagation();
@@ -1180,6 +1122,7 @@ function doRoomJoinSetup(room){
  * @param:    data - The message for the room
  ****************************************************************************/
 function postMessage(thisRoom, data){
+  console.log('RPH Tools: postMessage', data);
   getUserById(data.userid, function(User){
     var timestamp = makeTimestamp(data.time);
     var msg = parseMsg(data.msg);
@@ -1198,12 +1141,15 @@ function postMessage(thisRoom, data){
       var linkMatches = [];
 
       linkMatches = msg.match(new RegExp('<a class="room-link">(.*?)<\/a>','g'));
+      console.log('RPH Tools - Link matches', linkMatches);
+
       if(linkMatches !== null){
         for(i = 0; i < linkMatches.length; i++){
           var prunedMsg = msg.match(new RegExp('>(.*?)<', ''))[1];
           msg = msg.replace(linkMatches[i], prunedMsg);
         }
       }
+      console.log('RPH Tools - Processed message', msg);
     }
 
     /* Add pinging higlights */
@@ -1302,6 +1248,7 @@ function matchPing(msg){
       if (isInLink(pingNames[i], msg) === false){
         var testRegex = new RegExp(regexPattern, regexParam);
         if(msg.match(testRegex)){
+          console.log('RPH Tools - name matched', i, pingNames[i]);
           return testRegex;
         }
       }
@@ -1332,9 +1279,14 @@ function highlightPing(msg, testRegex){
   if((pingFlags & 4) > 0){
     italicsEnabled = "font-style:italic; ";
   }
+
+  console.log('<span style="color: ' + pingColor + '; background: ' +
+               pingHighlight +'; ' + boldEnabled + italicsEnabled + '">' +
+               msg.match(testRegex) + '</span>');
   msg = msg.replace(testRegex, '<span style="color: ' + pingColor +
                     '; background: ' + pingHighlight +'; ' + boldEnabled +
                     italicsEnabled + '">' + msg.match(testRegex) + '</span>');
+  console.log('RPH Tools - Pinged message', msg);
 
   return msg;
 }

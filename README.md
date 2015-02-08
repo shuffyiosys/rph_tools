@@ -1,168 +1,188 @@
-================================================================================
-RPH Tools
-================================================================================
+***
+#Description
+RPH Tools is a userscript with a set of features that enriches the RPH
+experience.
 
-================================================================================
-1. Description
-================================================================================
-RPH Tools is a custom user script for the Greasemonkey and Tampermonkey plugins.
-This script is to fix issues and add features to RPHaven (www.rphaven.com). This
-script only works however on the chat portion of the website (chat.rphaven.com)
+***
+#How to Install and Update
 
-================================================================================
-2. Features
-================================================================================
-Chat room
+## Installing RPH Tools
+1. You must have (one or the other)
+  - [Firefox](http://www.getfirefox.com) with the [Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/) extension installed
+  - [Google Chrome](https://www.google.com/chrome/) or [Chromium](http://www.chromium.org/Home) with the [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en) extension installed.
+2. **For Google Chrome users:** Google Chrome by default does not allow installation of custom user scripts unless you either bypass it or they're on the Chrome store. To bypass this, follow [these instructions](http://techsupportguides.com/install-userscripts-in-chrome/) (that's a link).
+3. If you have a previous version, you should remove it.
+4. Then...
+  - Click on the "Install" button on top to add the script or...
+  - Click on the "Source Code" tab and copy the source code, then...
+    - In Greasemonkey, select "Add new script", enter some information then press OK, then paste the code in there. Make sure to save it and enable it.
+    - In Tampermonkey, select "Add a new script", then paste the code in there. Press the save icon and enable it.
+5. Refresh RPH if you're on it already for the script to take effect.
 
-- User inputted names and words to trigger pinging.
-- Plays an audio ping upon matching.
-  -  Supports only .wav, .mp3. and .ogg files
-- Custom text and highlight colors
-- Bold or italicize text
-- Triggering on exact matching and case sensitivity
-- Will save in a cookie to allow persistent changes
-- Can change settings on the fly
-- Room where the ping happened will be highlighted.
-- Room links (where posting the name of the room creates a link to it) can be
-  enabled or disabled in chats.
+##To update
+Just press the "install" button. This will overwrite the version you currently have.
 
-Random number generators
+***
+#Features
+![enter image description here](http://i.imgur.com/qI622iT.png "Screen shot the settings")
 
-- Coin flipping
-- Roll 1-10 dice with 2-100 sides.
+RPH Tools is a user script that adds additional features into RPH. These features were implemented to either enrich the user's experience to the website or to make certain commands easier to issue. The list of features is pretty long, so here it is in a convenient list form!
+
+### General
+- All of these settings can be changed and applied without on the fly refreshing the chat
+- All persistent settings are saved under localStorage.
+
+### Chat room and PM features
+- Changing the text color of a user name with hex values instead of the slider.
+- Custom pinging options. This allows a user to be given a visual and audio "ping" when someone types up a keyword.
+  - Highlights will mark the keyword and the chat where the ping happened.
+  - Audio pings can be customized to any audio you wish! .mp3, .ogg, or .wav is supported only.
+- PM away message system for each user's name.
+- Room links (where posting the name of the room creates a link to it) can be enabled or disabled
+- Chat icons (where posting a link to a small enough image shows the image instead of the link) can be enabled or disabled.
+- Your user name will appear below each room tab's room name.
+
+### Random number generators
+- Flip a coin!
+- Roll 1-10 dice with 2-100 sides!
 - Generate a number between -2^32-1 and 2^32-1 (they're big numbers).
 
-Friends list/Blocking
+### Friends list/Blocking
+- Force block users. This will apply a block flag to users of your choosing.
+  - This only works in the chat.rphaven.com URL proper. Being outside of this URL will not apply this.
 
-- Force block users. This will apply a "block" flag on a user every time you go
-  on chat. However, since this script does not execute unless you're in
-  chat.rphaven.com, be weary if you've decided to go somewhere else first.
-  - You can unblock users if you want to as well.
-  - There's a limit based on the cookie size.
+### Mod Tools
+- Mods and owners can perform kicks, bans, and mod promotions to a room they own, all without both parties being in the room!
 
-Mod Tools
-- Easier methods to perform modding actions in a room.
+***
+#How to Use
+**Note** Saved settings are automatically retrieved and populated.
 
-================================================================================
-3. How to Use
-================================================================================
+1. After installing and opening up RPH, "More Settings" should appear in the top right corner.
+2. Click on "More Settings" to open up the main window.
+3. Click on the tab setting/feature you want to change or use.
+4. When you're done, click on "More Settings" to close the window and save settings.
 
-Click on the "More Settings" text on the top right corner
-Click on the tab setting/feature you want to change or use.
+### Chat Room and PM Settings
+1. User name text color:
+  - Enter a user name and color (6 or 3 digit hex code) to set the color for that user name.
+  - Colors are limited per channel to D2 for 6 character codes and D for 3 character codes.
+    - For example, #D2D2D3 is not valid and neither is #00E.
+2. Setting up pings:
+  - **For ping names and URL**, do not use the pipe ( | ), this is used for separating entries when saving settings.
+  - Enter all the names or words you want to be pinged by. Separate each entry with a comma, but leave no spaces.
+    - e.g., Do "Alice,Bob" instead of "Alice, Bob"
+  - Enter the URL of the sound file to play when a ping is matched. It must be a WAV, MP3, or OGG file.
+  - If you need a place to upload a sound clip:
+    - Go to [Clyp.it](http://clyp.it) and upload your sound
+    - When it's done, click on the "Advanced" tab and it'll give you a .mp3 and .ogg link you can use (see [image](http://i.imgur.com/xbmYLtG.png))
+  - Enter the text and highlight color as an RGB hex value.
+    - This uses HTML compatible hex codes, so you can enter #FFF for white instead of #FFFFFF.
+  - Check if you want the text in the to have bold and/or italics
+  - Check if you want words in the chat to exactly match the words on the list to get a ping.
+    - e.g., if using "Mel", it must match that and will not trigger on "Melody" or "Melanie"
+  - Check if you want case sensitivity.
+    - e.g., if using "Mel" with this checked, it will not ping on "mel".
+  - You can check if the ping is to your liking by putting one of the words on the list into the chat (it will not ping that word/name if it's been previously posted). To save your settings, you must press the "More Settings" button again.
+  - If a setting is invalid, it will mark the field red and the window will not close or save settings until it's fixed.
+3. PM Away Messages (away messages are not persistent, they will disappear if you refresh the chat):
+  - Select a user name you want to be "away"
+  - Type in a message to send to anyone who PMs that name.
+  - Press "Enable" to set that name as away. "[Away]" will be prepended to that name to indicate so.
+  - To disable away messages, select the name from the list and press "Disable".
+  - If you PM someone with a name that is away, that name will no longer be away.
+3. If you want to turn off room linking, check the "No Room Links" check box.
+4. If you want to turn off image icons in chat, check the "No image icons" check box.
 
-Chat room settings
+### Random Number Generators
+**Coin toss**
+1. Press "Flip coin!" to flip a coin.
 
-- Enter all the names or words you want to be pinged by. Separate each entry
-  with a comma.
-- Enter the URL of the sound file to play when a ping is matched. It must be a
-  WAV, MP3, or OGG file.
-  - For ping names and URL, do not use the pipe ( | ), as this is the delimiter
-    for the script's cookie saving. If you use it, your settings will be screwed
-    up.
-- Enter the text and highlight color as an RGB hex value. This uses HTML
-  compatible hex codes, so you can enter #FFF for white instead of #FFFFFF.
-- Check if you want the text in the to have bold and/or italics
-- Check if you want words in the chat to exactly match the words on the list to
-  get a ping.
-  - e.g., if using "Mel", it must match that and will not trigger on "Melody" or
-   "Melanie"
-- Check if you want case sensitivity.
-  - e.g., if using "Mel" with this checked, it will not ping on "mel".
-- You can check if the ping is to your liking by putting one of the words on the
-  list into the chat (it will not ping that word/name if it's been previously
-  posted). To save your settings, you must press the "Pings" button again.
-  - If a setting is invalid, it will mark the field red and the window will not
-    close or save settings until it's fixed.
-  - This script is designed to not need a page refresh, but in case the settings
-    aren't taking, refresh the page anyway.
-- If you don't want rooms to be linked if said in chat, check the "No room
-  linking in chat" checkbox.
+**Dice rolling**
+1. Enter the number of die you want to roll
+2. Enter the number of sides per die you want to roll
+3. Press the "Let's Roll" button to generate a roll.
 
-Random Number Generators
+**Generic RNG**
+1. Enter a minimum number. The results will include this number
+2. Enter a maximum number. The results will exclude this number.
+3. Press "Randomize!" to get a number.
 
-Coin toss
-- Press "Flip coin!" to flip a coin.
+### Friends List/Blocking
+1. Enter the user you want to block in the text box and press Enter.
+2. If the name does not come up, the box will be highlighted red, otherwise the name will appear in the drop down menu below.
+3. To unblock, select the name from the drop down menu and press the "Unblock" button.
+4. This list is auto-populated when the chat loads. If for some reason the user name no longer exists or is unreachable, the script will not block that name and you will have to re-block the name if it comes back.
 
-Dice rolling
-- Enter the number of die you want to roll
-- Enter the number of sides per die you want to roll
-- Press the "Let's Roll" button to generate a roll.
+### Mod Tools
+1. Enter the room where the action will be performed.
+2. Enter your user name of the room that has mod rights
+3. Enter the user name of the person whom will receive this action.
+4. Enter a message that will be displayed
+5. Press one of the buttons to perform the action.
 
-Generic RNG
-- Enter a minimum number. The results will include this number
-- Enter a maximum number. The results will exclude this number.
-- Press "Randomize!" to get a number.
+### Import/Export
+1. Press the "Export" button, this will populate the textbox with settings are saved.
+2. To restore settings, input exported settings in the textbox and press the "Import" button. If there is something wrong with the settings, the textbox will show red.
 
-Friends List/Blocking
-- Enter the user you want to block in the text box and press Enter.
-- If the name does not come up, the box will be highlighted red, otherwise the
-  name will appear in the drop down menu below.
-- To unblock, select the name from the drop down menu and press the "Unblock"
-  button.
+***
+# Troubleshooting
+- Make sure you are using **one version** of this script. If you installed the other versions, they probably won't play nice with each other.
+- Refresh the page after installing. If you are on RPH and you install this script, then this is a must.
+- Delete cookies related to pings
+  - Go into your browser's options and search for RPH's cookies. You can either delete them all (which will just make it forget you were logged in) or find the cookies prepended with rphTools_.
+- If your settings are out of whack...
+    - Open up your browser's JavaScript console. In Firefox, either press F12 to bring up the developer's window and select the "Console" tab or go to Options > Developer > Web Console. In Chrome, either do CTRL (Command on Mac) + Shift + J or go to View > Developer > JavaScript Console.
+    - Issue the command ```localStorage.removeItem('chatSettings');``` to delete chat and PM settings or ```localStorage.removeItem('blockedUsers');``` to delete blocked users.
+    - Verify they have been deleted by issuing ```localStorage.getItem('chatSettings');``` or ```localStorage.getItem('blockedUsers');``` and seeing if the console posts ```null```.
 
-Mod Tools
-- Enter the room to perform the action
-- Enter your user name of the room that has mod rights
-- Enter the user name of whom the action is being performed on
-- Enter a message that will be displayed (defaults to a generic one)
-- Press the appropriate button to adminster the action.
 
-================================================================================
-4. Troubleshooting
-================================================================================
-Refresh the page after installing. Make sure you are using one version of this
-script. If you installed the other versions, they probably won't play nice with
-each other. Delete cookies related to pings. Go into your browser's options and
-search for RPH's cookies. You can either delete them all (which will just make
-it forget you were logged in) or find the cookies prepended with rphTools_.
+***
+#Known Issues
+- Rooms share the same chat buffer if you connect to the same one with multiple alts. This may cause pings to be a bit overzealous.
 
-================================================================================
-5. Known Issues
-================================================================================
-- RPH has a quirk with how the chat is buffered. There's only one buffer (i.e.,
-  place where all the messages get posted) and all your names that log into the
-  chat room reference that. So expect funny things to happen.
-- This script relies on account fetching callbacks. Under normal operation, RPH
-  should send the user's account information once the PM server connection is
-  established. This is needed to populate the drop list for names. So if there
-  is some issues with getting account info, this script may not work.
-- There's a layout quirk with the chat. If the message of the day is too long,
-  it could block the button.
+***
+#Limitations
+- If you are running RPH on multiple tabs/windows, most settings will not propagate across all open instances.
+- Greasemonkey/Tampermonkey has no access to local files for security reasons. Therefore, any audio you use for pings must be online somewhere.
+- Do not use the pipe ( | ) in the text fields, I use that as the delimiter for cookie saving.
 
-================================================================================
-6. Limitations
-================================================================================
-- Offers no sanitizing of inputs, but I'm not sure how necessary this is.
-- Greasemonkey/Tampermonkey has no access to local files for security reasons.
-  Therefore, any audio you use for pings must be online somewhere.
-- Do not use the pipe ( | ) in the text fields, I use that as the delimiter for
-  cookie saving.
-
-================================================================================
-7. License/Disclaimer
-================================================================================
+***
+#License/Disclaimer
 Copyright (c) 2014 Shuffyiosys
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-================================================================================
-8. Version History
-================================================================================
+***
+#Version History
+Entries with ( ) around them either did not fix the problem stated, or caused other issues which were fixed elsewhere.
+
+1.2.3 - 02/04/2015
+- Added Import/Export settings.
+- Fixed the issue where blocked usernames would fill up the localStorage. There
+  was a problem when loading, it would call "blockUser" which would add the user
+  ID to the blocked users array. But the loading also added it. This fixes the
+  issue supposedly fixed in 1.2.1
+- Fixed an issue with the away message system where if you attempt to enable
+  away on a name already away, it will add another [Away] block.
+
+
+1.2.2 - 02/04/2015
+- Fixed a problem with the random number generator relying on chat tab contents
+  to know which room to post in.
+
+1.2.1 - 02/03/2015
+- (Fixed the issue where blocked usernames would fill up the localStorage.)
+
+1.2.0 - 02/02/2015
+- Fixed a bug with the PM Away Message system where if you enable it for a
+  name, disable it, then disable it again, the username gets eaten up.
+- Your username will be inserted below the chat name to help keep track of alts
+
 1.1.0 - 02/01/2015
 - Changed <form> tags in the HTML to <div> tags. This causes textboxes to invoke
   a submit action if enter is pressed.

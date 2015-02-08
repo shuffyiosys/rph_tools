@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name       RPH Tools
+// @name       RPH Tools Test
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    1.2.3
+// @version    1.2.2
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -176,22 +176,12 @@ var html = '\
         <button type="button" id="unmodButton">Unmod</button>\
       </div>\
       <br />\
-      <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="importExportHeader">Import/Export Settings</h3>\
-      <div id="importExportForm" style="display:none;">\
-        <br />\
-        <p>Press "Export" to export savable settings. To import settings, past them into the text box and press "Import".</p><br />\
-        <textarea name="importExportText" id="importExportTextarea" style="background: rgb(255, 255, 255); height: 250px; width: 390px;"></textarea>\
-        <button type="button" id="exportButton">Export</button>\
-        <button style="margin-left: 288px;" type="button" id="importButton">Import</button>\
-        <br>\
-      </div>\
-      <br />\
       <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="aboutHelpHeader">About/Help</h3>\
       <div id="aboutHelpForm" style="display:none;">\
         <br><p>Click on the "More Settings" button again to save your settings!</p>\
         <p>You may need to refresh the chat for the settings to take effect.</p>\
         <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
-        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.3</p>\
+        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.2</p>\
         <br>\
       </div>\
     </div>\
@@ -242,13 +232,13 @@ $(function(){
     }
 
     if (localStorage.getItem("blockedUsers") !== null){
-      var temp_blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
-      console.log("RPH Tools - Blocked settings: ", temp_blockedUsers);
+      blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
+      console.log("RPH Tools - Blocked settings: ", blockedUsers);
 
-      for (var i = 0; i < temp_blockedUsers.length; i++){
-        if(temp_blockedUsers[i] !== "")
+      for (var i = 0; i < blockedUsers.length; i++){
+        if(blockedUsers[i] !== "")
         {
-          blockUserById(parseInt(temp_blockedUsers[i]));
+          blockUserById(parseInt(blockedUsers[i]));
         }
       }
     }
@@ -449,27 +439,19 @@ function ChatSettingsSetup(){
   });
 
   $('#setAwayButton').click(function(){
+    var awayMsgObj = {
+      "usedPmAwayMsg" : false,
+      "message"       : "",
+      "enabled"       : true
+    };
     var userId = $('#pmNamesDroplist option:selected').val();
     var name = $("#pmNamesDroplist option:selected").html();
+    awayMsgObj.message = document.getElementById('awayMessageTextbox').value;
+    awayMessages[userId] = awayMsgObj;
 
-    if (awayMessages[userId] !== undefined){
-      if(awayMessages[userId].enabled === true){
-        awayMessages[userId].message = document.getElementById('awayMessageTextbox').value;
-      }
-    }
-    else{
-      var awayMsgObj = {
-        "usedPmAwayMsg" : false,
-        "message"       : "",
-        "enabled"       : true
-      };
-      awayMsgObj.message = document.getElementById('awayMessageTextbox').value;
-      awayMessages[userId] = awayMsgObj;
-
-      $("#pmNamesDroplist option:selected").html("[Away]" + name);
-      $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
-      $("#pmNamesDroplist option:selected").prop("selected", false);
-    }
+    $("#pmNamesDroplist option:selected").html("[Away]" + name);
+    $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
+    $("#pmNamesDroplist option:selected").prop("selected", false);
   });
 
   $('#removeAwayButton').click(function(){
@@ -503,8 +485,6 @@ function populateSettingsDialog(){
   document.getElementById("pingItalicsEnable").checked = false;
   document.getElementById("pingExactMatch").checked = false;
   document.getElementById("pingCaseSense").checked = false;
-  document.getElementById("roomLinksDisable").checked = false;
-  document.getElementById("imgIconDisable").checked = false;
 
   if( (pingSettings.flags & 2) > 0 ){
     document.getElementById("pingBoldEnable").checked = true;
@@ -898,7 +878,6 @@ function saveBlockSettings(){
   localStorage.removeItem("blockedUsers");
   localStorage.setItem("blockedUsers", JSON.stringify(blockedUsers));
   console.log("RPH Tools - Blocked users", localStorage.getItem("blockedUsers"));
-  console.log("RPH Tools - Blocked users locally", blockedUsers);
 }
 
 /****************************************************************************
@@ -1039,51 +1018,6 @@ function ImportExportSetup(){
     document.getElementById("importExportTextarea").value = chatSettings_str + "|" + blockedUsers_str;
   });
   console.log('RPH Tools - Import/Export setup done.');
-}
-
-/****************************************************************************
- * @brief:    Imports settings from the textarea.
- ****************************************************************************/
-function ImportSettings(){
-  var settings_str = document.getElementById("importExportTextarea").value;
-  var chatSettings_str = '';
-  var blockedUsers_str = '';
-  var temp_pingSettings;
-  var temp_blockedUsers;
-  var delimiter = settings_str.indexOf("|");
-
-  try{
-    chatSettings_str = settings_str.substring(0, delimiter);
-    blockedUsers_str = settings_str.substring(delimiter+1, settings_str.length);
-    temp_pingSettings = JSON.parse(chatSettings_str);
-    temp_blockedUsers = JSON.parse(blockedUsers_str);
-  }
-  catch (err){
-    console.log('RPH Tools - Error importing settings');
-  }
-
-  /* Time to do a lot of checking here. */
-  if( chatSettings_str === '' || blockedUsers_str === '' ||
-      temp_pingSettings === undefined || temp_blockedUsers === undefined )
-  {
-    mark_problem("importExportTextarea", true);
-  }
-  else{
-    pingSettings = temp_pingSettings;
-    blockedUsers = [];
-    populateSettingsDialog();
-    saveChatSettings(pingSettings);
-
-    $('#blockedDropList').find('option').remove().end();
-    for (var i = 0; i < temp_blockedUsers.length; i++){
-      if(temp_blockedUsers[i] !== "")
-      {
-        blockUserById(temp_blockedUsers[i]);
-      }
-    }
-    console.log("RPH Tools - blocked list from import", blockedUsers);
-    mark_problem("importExportTextarea", false);
-  }
 }
 
 /****************************************************************************
