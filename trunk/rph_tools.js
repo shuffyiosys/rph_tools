@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    1.2.3
+// @version    1.2.4
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -163,11 +163,11 @@ var html = '\
         <p>Your username that\'s a mod</p>\
         <input style="width: 100%;" type="text" id="modFromTextInput" placeholder="Your username">\
         <br />\
-        <p>Perform action on this user: </p>\
-        <input style="width: 100%;" type="text" id="modTargetTextInput" placeholder="Target\'s username">\
-        <br />\
         <p id="modMessageLabel">Message</p>\
         <input style="width: 100%;" type="text" id="modMessageTextInput" placeholder="Message">\
+        <br />\
+        <p>Perform action on these users (separate each name with a comma): </p>\
+        <textarea name="modTargetTextInput" id="modTargetTextInput" style="background: rgb(255, 255, 255); height: 100px; width: 390px;"></textarea>\
         <br />\
         <button type="button" id="kickButton">Kick</button>\
         <button style="margin-left: 30px;" type="button" id="banButton">Ban</button>\
@@ -191,7 +191,7 @@ var html = '\
         <br><p>Click on the "More Settings" button again to save your settings!</p>\
         <p>You may need to refresh the chat for the settings to take effect.</p>\
         <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
-        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.3</p>\
+        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.4</p>\
         <br>\
       </div>\
     </div>\
@@ -243,7 +243,7 @@ $(function(){
 
     if (localStorage.getItem("blockedUsers") !== null){
       var temp_blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
-      console.log("RPH Tools - Blocked settings: ", temp_blockedUsers);
+      console.log("RPH Tools - Blocked users: ", temp_blockedUsers);
 
       for (var i = 0; i < temp_blockedUsers.length; i++){
         if(temp_blockedUsers[i] !== "")
@@ -253,6 +253,7 @@ $(function(){
       }
     }
     else{ /* Fallback to cookies */
+      console.log("RPH Tools - No blocked users in localStorage, grabbing cookie.");
       loadBlockSettings();
     }
   }
@@ -306,6 +307,8 @@ function SetUpToolsDialog(){
       aboutHelpTool.state = true;
     }
   });
+
+  console.log('RPH Tools - Dialog box setup complete. RPH Tools is now ready.');
 }
 
 /****************************************************************************
@@ -968,13 +971,24 @@ function ModdingSetup(){
  * @param:    action - string command that has the action.
  ****************************************************************************/
 function modAction(action){
+  var targets = $('#modTargetTextInput').val().replace('\n','').replace('\r','');
+  targets = targets.split(',');
+  console.log('RPH Tools - Target list ', targets);
+
+  for(var i = 0; i < targets.length; i++){
+    emitModAction(action, targets[i]);
+  }
+}
+
+function emitModAction(action, targetName){
   var room = document.getElementById("modRoomTextInput").value;
+  var user = document.getElementById("modFromTextInput").value;
   var userId = 0;
   var targetId = 0;
   var target = '';
   var modMessage = ' ';
 
-  getUserByName(document.getElementById("modTargetTextInput").value, function(Target){
+  getUserByName(targetName, function(Target){
     targetId = Target.props.id;
     target = Target.props.name;
   });
@@ -1038,7 +1052,6 @@ function ImportExportSetup(){
     var blockedUsers_str = JSON.stringify(blockedUsers);
     document.getElementById("importExportTextarea").value = chatSettings_str + "|" + blockedUsers_str;
   });
-  console.log('RPH Tools - Import/Export setup done.');
 }
 
 /****************************************************************************
