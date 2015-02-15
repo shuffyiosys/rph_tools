@@ -161,6 +161,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #Version History
 Entries with ( ) around them either did not fix the problem stated, or caused other issues which were fixed elsewhere.
 
+1.2.6 - 02/15/2015
+- Reiszed the dialog window to 480x500.
+- Tied RPH Tools to the official blocking mechanism.
+- Added placeholder text and changed the text color in the chat input textbox.
+
+1.2.5 - 02/11/2015
+- Changed the mod target separated to semicolon, as commas are valid in
+  character names.
+
+1.2.4 - 02/10/2015
+- Added multitarget option for mod commands
+
 1.2.3 - 02/04/2015
 - Added Import/Export settings.
 - Fixed the issue where blocked usernames would fill up the localStorage. There

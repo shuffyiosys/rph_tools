@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    1.2.6
+// @version    1.2.5
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -68,9 +68,9 @@ var awayMessages = {};
 
 // HTML code to be injected into the chat.
 var html = '\
-  <div id="settingsBox" style="display: none; position: absolute; top: 35px; z-index: 9999999; height: 500px; width: 480px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.7); right: 85px; background: url(&quot;http://www.rphaven.com/css/img/aero-bg.png&quot;) repeat scroll 0px 0px transparent; padding: 5px;" left="">\
+  <div id="settingsBox" style="display: none; position: absolute; top: 35px; z-index: 9999999; height: 360px; width: 480px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.7); right: 85px; background: url(&quot;http://www.rphaven.com/css/img/aero-bg.png&quot;) repeat scroll 0px 0px transparent; padding: 5px;" left="">\
     <h3 style="text-align: center; color:#000;">RPH Tools</h3>\
-    <div id="settingsContainer" style="height: 470px; width: 100%; overflow: auto; background: rgb(51, 51, 51); padding: 10px; border-radius: 5px; font-size: 0.8em;">\
+    <div id="settingsContainer" style="height: 330px; width: 100%; overflow: auto; background: rgb(51, 51, 51); padding: 10px; border-radius: 5px; font-size: 0.8em;">\
       <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="pingHeader">Chat room and PM options</h3>\
       <div id="ping_form" style="display:none;">\
         <p><strong>User text color</strong></p>\
@@ -191,7 +191,7 @@ var html = '\
         <br><p>Click on the "More Settings" button again to save your settings!</p>\
         <p>You may need to refresh the chat for the settings to take effect.</p>\
         <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
-        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.6</p>\
+        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.5</p>\
         <br>\
       </div>\
     </div>\
@@ -215,24 +215,6 @@ $(function(){
     for(i = 0; i < users.length; i++){
       getUserName(users[i]);
     }
-  });
-
-  _on('ignores', function(data){
-    console.log('RPH Tools: Blocking user', data.ids);
-    blockUserById(data.ids[0]);
-  });
-
-  _on('remove-ignore', function(data){
-    var names = document.getElementById("blockedDropList");
-    UserChangeIgnore(data.id, false);
-    console.log('RPH Tools: Unblocking user', data.id);
-
-    for (var i=0; i<names.length; i++){
-      if (names.options[i].value == data.id )
-      names.remove(i);
-    }
-    blockedUsers.splice(blockedUsers.indexOf(data.id),1);
-    saveBlockSettings();
   });
 
   chatSocket.on('confirm-room-join', function(data){
@@ -893,21 +875,10 @@ function UserChangeIgnore(UserId, Ignore){
  * @param:    User - User object for the username being blocked
  ****************************************************************************/
 function blockUser(User){
-  /* Check if this user is already in the list. */
-  var inList = false;
-
-  for (var i=0; i < blockedUsers.length; i++){
-    if (User.props.id == blockedUsers[i]){
-      inList = true;
-    }
-  }
-
-  if (inList === false){
-    blockedUsers.push(User.props.id);
-    $('#blockedDropList').append('<option value="' + User.props.id + '">' +
-                                  User.props.name + '</option>');
-    UserChangeIgnore(User.props.id, true);
-  }
+  blockedUsers.push(User.props.id);
+  $('#blockedDropList').append('<option value="' + User.props.id + '">' +
+                                User.props.name + '</option>');
+  UserChangeIgnore(User.props.id, true);
 }
 
 /****************************************************************************
@@ -1199,11 +1170,11 @@ function doRoomJoinSetup(room){
   };
 
   /* Add the user's name below the room name to differentiate who's in it. */
-  var idRoomName = thisRoom.$tabs[tabsLen-1][0].className.split(' ')[2];
-  var regex = new RegExp(' [0-9]+', '');
+  var regex = new RegExp(' [0-9]*_', '');
   var charID = className.match(regex)[0];
 
-  charID = charID.substring(1,charID.length);
+  charID = charID.substring(1,charID.length-1);
+
   getUserById(charID, function(User){
     var newTabHtml = '<span>' + room.room + '</span><p style="font-size: x-small; position: absolute; top: 12px;">' + User.props.name + '</p>';
     thisRoom.$tabs[tabsLen-1].html(newTabHtml);
@@ -1211,8 +1182,7 @@ function doRoomJoinSetup(room){
       ev.stopPropagation();
       chatSocket.emit('leave', {userid:User.props.id, name:thisRoom.props.name});
     }).appendTo( thisRoom.$tabs[tabsLen-1] );
-    $('textarea.' + idRoomName).prop('placeholder', 'Post as ' + User.props.name);
-    $('textarea.' + idRoomName).css('color', "#" + User.props.color);
+
   });
 }
 
