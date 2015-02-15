@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    1.2.6
+// @version    1.2.4
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -166,7 +166,7 @@ var html = '\
         <p id="modMessageLabel">Message</p>\
         <input style="width: 100%;" type="text" id="modMessageTextInput" placeholder="Message">\
         <br />\
-        <p>Perform action on these users (separate each name with a semi-colon, no space between names): </p>\
+        <p>Perform action on these users (separate each name with a comma): </p>\
         <textarea name="modTargetTextInput" id="modTargetTextInput" style="background: rgb(255, 255, 255); height: 100px; width: 390px;"></textarea>\
         <br />\
         <button type="button" id="kickButton">Kick</button>\
@@ -191,22 +191,11 @@ var html = '\
         <br><p>Click on the "More Settings" button again to save your settings!</p>\
         <p>You may need to refresh the chat for the settings to take effect.</p>\
         <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
-        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.6</p>\
+        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.2.4</p>\
         <br>\
       </div>\
     </div>\
   </div>';
-
-var chatTabStyle = '#chat-tabs .tab.active { \
-    box-shadow: 0 0 15px 10px rgba(255,255,255,0.75) inset;\
-    background: #6F9FB9;\
-    color: #111;\
-  }\
-  #chat-tabs .tab:hover {\
-    color: #111;\
-    box-shadow: none;\
-    background: #6F9FB9;\
-  }';
 
 /* If this doesn't print, something happened with the global vars */
 console.log('RPH Tools script start');
@@ -234,7 +223,6 @@ $(function(){
   setupPMFunctions();
 
   /* Set up HTML injection. */
-  addGlobalStyle(chatTabStyle);
   $('#random-quote').hide();
   $('#top p.right').prepend('<a class="pings settings">More Settings</a>|');
   $('body').append(html);
@@ -984,7 +972,7 @@ function ModdingSetup(){
  ****************************************************************************/
 function modAction(action){
   var targets = $('#modTargetTextInput').val().replace('\n','').replace('\r','');
-  targets = targets.split(';');
+  targets = targets.split(',');
   console.log('RPH Tools - Target list ', targets);
 
   for(var i = 0; i < targets.length; i++){
@@ -1182,11 +1170,11 @@ function doRoomJoinSetup(room){
   };
 
   /* Add the user's name below the room name to differentiate who's in it. */
-  var idRoomName = thisRoom.$tabs[tabsLen-1][0].className.split(' ')[2];
-  var regex = new RegExp(' [0-9]+', '');
+  var regex = new RegExp(' [0-9]*_', '');
   var charID = className.match(regex)[0];
 
-  charID = charID.substring(1,charID.length);
+  charID = charID.substring(1,charID.length-1);
+
   getUserById(charID, function(User){
     var newTabHtml = '<span>' + room.room + '</span><p style="font-size: x-small; position: absolute; top: 12px;">' + User.props.name + '</p>';
     thisRoom.$tabs[tabsLen-1].html(newTabHtml);
@@ -1194,8 +1182,7 @@ function doRoomJoinSetup(room){
       ev.stopPropagation();
       chatSocket.emit('leave', {userid:User.props.id, name:thisRoom.props.name});
     }).appendTo( thisRoom.$tabs[tabsLen-1] );
-    $('textarea.' + idRoomName).prop('placeholder', 'Post as ' + User.props.name);
-    $('textarea.' + idRoomName).css('color', "#" + User.props.color);
+
   });
 }
 
@@ -1380,32 +1367,20 @@ function highlightRoom(thisRoom){
     thisRoom.$tabs[0].css('background-color', pingHighlight);
     thisRoom.$tabs[0].css('color', pingColor);
 
-    thisRoom.$tabs[0].hover(
-      function(){
-        thisRoom.$tabs[0].css('background-color', '#6F9FB9');
-        thisRoom.$tabs[0].css('color', '#333');
-    },
-      function(){
-        thisRoom.$tabs[0].css('background-color', pingHighlight);
-        thisRoom.$tabs[0].css('color', pingColor);
-    });
-
     thisRoom.$tabs[0].click(function(){
-      thisRoom.$tabs[0].css('background-color', '');
-      thisRoom.$tabs[0].css('color', '');
+      thisRoom.$tabs[0].css('background-color', '#333');
+      thisRoom.$tabs[0].css('color', '#6F9FB9');
 
       thisRoom.$tabs[0].hover(
         function(){
-          thisRoom.$tabs[0].css('background-color', '#6F9FB9');
-          thisRoom.$tabs[0].css('color', '#333');
+         thisRoom.$tabs[0].css('background-color', '#6F9FB9');
+         thisRoom.$tabs[0].css('color', '#333');
       },
         function(){
-          thisRoom.$tabs[0].css('background-color', '');
-          thisRoom.$tabs[0].css('color', '');
+         thisRoom.$tabs[0].css('background-color', '#333');
+         thisRoom.$tabs[0].css('color', '#6F9FB9');
       });
     });
-
-    console.log('RPH Tools - added highlights');
   }
 }
 
@@ -1490,6 +1465,7 @@ function removeRoomLinksInPM(){
                                                           links[i].innerHTML);
   }
 }
+
 /****************************************************************************
  * @brief     Appends message to a room without adding an image icon
  * @param     html - HTML to add to the room.
@@ -1511,14 +1487,4 @@ function appendMessageTextOnly(html, thisRoom){
   }
 
   return $el;
-}
-
-function addGlobalStyle(css) {
-    var head, style;
-    head = document.getElementsByTagName('head')[0];
-    if (!head) { return; }
-    style = document.createElement('style');
-    style.type = 'text/css';
-    style.innerHTML = css;
-    head.appendChild(style);
 }
