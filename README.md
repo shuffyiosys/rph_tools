@@ -161,8 +161,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #Version History
 Entries with ( ) around them either did not fix the problem stated, or caused other issues which were fixed elsewhere.
 
+1.3.0 - 02/17/2015
+- RPH Tools now takes over the official "Settings" link (until it gets used for something useful again)
+- Moved the chat history setting into RPH Tools
+- Changed the RNG button label behavior to say "Wait..." while the buttons are disabled.
+
+1.2.7 - 02/16/2015
+- Fixed a layout issue with the import/export settings.
+- Fixed an issue where the URL for pings would not work until the ping URL is re-entered again. Issue was that it wasn't loaded after getting chat settings.
+
 1.2.6 - 02/15/2015
-- Reiszed the dialog window to 480x500.
+- Resized the dialog window to 480x500.
 - Tied RPH Tools to the official blocking mechanism.
 - Added placeholder text and changed the text color in the chat input textbox.
 
@@ -175,76 +184,48 @@ Entries with ( ) around them either did not fix the problem stated, or caused ot
 
 1.2.3 - 02/04/2015
 - Added Import/Export settings.
-- Fixed the issue where blocked usernames would fill up the localStorage. There
-  was a problem when loading, it would call "blockUser" which would add the user
-  ID to the blocked users array. But the loading also added it. This fixes the
-  issue supposedly fixed in 1.2.1
-- Fixed an issue with the away message system where if you attempt to enable
-  away on a name already away, it will add another [Away] block.
+- Fixed the issue where blocked usernames would fill up the localStorage. There was a problem when loading, it would call "blockUser" which would add the user ID to the blocked users array. But the loading also added it. This fixes the issue supposedly fixed in 1.2.1
+- Fixed an issue with the away message system where if you attempt to enable away on a name already away, it will add another [Away] block.
 
 
 1.2.2 - 02/04/2015
-- Fixed a problem with the random number generator relying on chat tab contents
-  to know which room to post in.
+- Fixed a problem with the random number generator relying on chat tab contents to know which room to post in.
 
 1.2.1 - 02/03/2015
 - (Fixed the issue where blocked usernames would fill up the localStorage.)
 
 1.2.0 - 02/02/2015
-- Fixed a bug with the PM Away Message system where if you enable it for a
-  name, disable it, then disable it again, the username gets eaten up.
+- Fixed a bug with the PM Away Message system where if you enable it for a name, disable it, then disable it again, the username gets eaten up.
 - Your username will be inserted below the chat name to help keep track of alts
 
 1.1.0 - 02/01/2015
-- Changed <form> tags in the HTML to <div> tags. This causes textboxes to invoke
-  a submit action if enter is pressed.
-- Uses local WebStorage now instead of cookies. Cookies will still be loaded if
-  available and as a fallback.
+- Changed <form> tags in the HTML to <div> tags. This causes textboxes to invoke a submit action if enter is pressed.
+- Uses local WebStorage now instead of cookies. Cookies will still be loaded if available and as a fallback.
 - Removed PM text colors as they weren't working as intended.
-- [DEPCRATED]Fixed a bug with blocking. Originally the script didn't touch the
-  cookie that was saved and there wasn't a way to scrub names that no longer
-  would respond to the getUserById. The script now saves every time you block
-  someone to refresh the list. This could be a problem because if you block
-  enough people whose names no longer respond, you could fill up the cookie and
-  it will no longer save blocked people. However, in this version if you've
-  blocked someone with a name that has disappeared and it reappears, you will
-  have to reblock them.
+- [DEPCRATED]Fixed a bug with blocking. Originally the script didn't touch the cookie that was saved and there wasn't a way to scrub names that no longer would respond to the getUserById. The script now saves every time you block someone to refresh the list. This could be a problem because if you block enough people whose names no longer respond, you could fill up the cookie and it will no longer save blocked people. However, in this version if you've blocked someone with a name that has disappeared and it reappears, you will have to reblock them.
 
-  This is no longer an issue with WebStorage, however, unresponsive names will
-  still be pruned to avoid memory leaks.
-- Added per-username PM away messages. To use, select a name, set an away
-  message, and press "Enable" or "Disable". Names that are away will be
-  highlighted in the list and will auto-reply when someone PMs them.
+  This is no longer an issue with WebStorage, however, unresponsive names will still be pruned to avoid memory leaks.
+- Added per-username PM away messages. To use, select a name, set an away message, and press "Enable" or "Disable". Names that are away will be highlighted in the list and will auto-reply when someone PMs them.
 
 1.0.1 - 01/04/2015
-- Added a filter so small images will be posted as links instead of the image
-  itself. (No PM filter yet)
+- Added a filter so small images will be posted as links instead of the image itself. (No PM filter yet)
 
 1.0.0 - 12/20/2014
 - Cleaned up the code a bit. Which is why it's now a 1.0.0
   - Removed some console dumps since they were not really important anymore
 - Reorganized the UI to be consistent.
-- Added away messages for PM. Set an away message and enable it and anyone who
-  PMs you will get that message. If you respond in any way, it'll turn off
-  auto-replying. Works across your account, but I'm considering it per-username
-  since this is just a session only feature (as in, if you log out, it will
+- Added away messages for PM. Set an away message and enable it and anyone who PMs you will get that message. If you respond in any way, it'll turn off
+  auto-replying. Works across your account, but I'm considering it per-username since this is just a session only feature (as in, if you log out, it will
     reset).
-- Fixed text color checking again. It didn't work on text inputs with three
-  characters. Also changed the value limiting algorithm.
+- Fixed text color checking again. It didn't work on text inputs with three characters. Also changed the value limiting algorithm.
 - Fixed bounds checking for the general RNG (also so it'd stop using Math.Pow)
-- Blocking is now by way of a button instead of pressing enter on the text
-  input. For some reason, pressing enter may make the browser think you're doing
-  a URL request, which tries to redirect you the site with the request.
+- Blocking is now by way of a button instead of pressing enter on the text input. For some reason, pressing enter may make the browser think you're doing a URL request, which tries to redirect you the site with the request.
 
 0.1.2 - 12/17/2014
 - Limited text colors so bright colors are not available.
-- Extended room link sanitizing on PMs to outgoing PMs. That was the problem I
-  think, it works fine if the PM window isn't up.
-- Added the option to include your text color in PMs. This only affects the
-  client side end, so if you enable it but the recipient doesn't, the recipient
-  doesn't see the colors, only you.
-- For license reasons I reverted the room link sanitizing on the chat room end
-  to what I originally did. Functionally it's the same.
+- Extended room link sanitizing on PMs to outgoing PMs.
+- [DEPRECATED] Added the option to include your text color in PMs. This only affects the client side end, so if you enable it but the recipient doesn't, the recipient doesn't see the colors, only you.
+- For license reasons I reverted the room link sanitizing on the chat room end to what I originally did. Functionally it's the same.
 
 0.1.1 - 12/15/2014
 - Expanded disabling of room linking to PMs now.
@@ -253,12 +234,9 @@ Entries with ( ) around them either did not fix the problem stated, or caused ot
 0.1.0 - 12/12/2014
 - Added the ability to change a username's color by way of raw hex inputs.
 - Script removes the quote/message of the day on the top header to fix an issue
-  where the message would hide the top right section if the browser width was
-  too low.
-- Fixed a bug where exact matching and case sensitivity was not actually working
-  properly.
-- Fixed a bug that was causing the script to think the ping settings were
-  invalid even though they were valid
+  where the message would hide the top right section if the browser width was too low.
+- Fixed a bug where exact matching and case sensitivity was not actually working properly.
+- Fixed a bug that was causing the script to think the ping settings were invalid even though they were valid
 
 0.0.8 - 12/10/2014
 - Adding kick and modding actions in the modding section
@@ -272,5 +250,4 @@ Entries with ( ) around them either did not fix the problem stated, or caused ot
 - Cleaned up the banning/unbanning in Mod Tools
 
 0.0.5 - 12/06/2014
-- Initial release. Implemented pinging, room link disabling, dice rolling,
-  blocking, and banning.
+- Initial release. Implemented pinging, room link disabling, dice rolling, blocking, and banning.

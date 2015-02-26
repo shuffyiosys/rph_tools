@@ -1,12 +1,17 @@
 // ==UserScript==
-// @name       RPH Tools Test
+// @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    2.0.0
+// @version    1.4.0
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
 // @grant      none
 // @license    MIT license (https://en.wikipedia.org/wiki/MIT_License)
+// ==/UserScript==
+/*jshint multistr: true */
+/*jshint bitwise: false*/
+/*global $:false */
+
 // ==/UserScript==
 /*jshint multistr: true */
 /*jshint bitwise: false*/
@@ -69,151 +74,148 @@ var tempSettings = 0;
 
 var roomTracking = {};
 
-var roomNamePairs = {};
-
 // HTML code to be injected into the chat.
 var html = '\
-<style>\
-  .rpht_headers{cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;}\
-  .rpht_textarea{background: rgb(255, 255, 255); height: 80px; width: 403px;}\
-</style>\
-<div id="settingsBox" style="display: none; position: absolute; top: 35px; z-index: 9999999; height: 500px; width: 450px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.7); right: 85px; background: url(&quot;http://www.rphaven.com/css/img/aero-bg.png&quot;) repeat scroll 0px 0px transparent; padding: 5px;" left="">\
-   <h3 style="text-align: center; color:#000;">RPH Tools</h3>\
-   <div id="settingsContainer" style="height: 470px; width: 100%; overflow: auto; background: rgb(51, 51, 51); padding: 10px; border-radius: 5px; font-size: 0.8em;">\
-     <h3 class="rpht_headers" id="pingHeader">Chat room and PM options</h3>\
-     <div id="ping_form" style="display:none;">\
-       <p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">\
-         <strong>User text color</strong>&nbsp;\
-       </span></p><br />\
-       <p>Username: <select  style="width: 300px; margin-left: 37px;" id="userColorDroplist"></select><br><br>\
-       <p>Text color: <input style="width: 300px;  margin-left: 40px;" type="text" id="userNameTextColor" name="userNameTextColor" value="#111">\</p><br/>\
-       <button style="margin-left: 338px;" type="button" id="userNameTextColorButton">Set color</button>\
-       <br />\
-       <p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">\
-         <strong>Ping Options</strong>&nbsp;\
-       </span></p><br />\
-       <p>Names to be pinged (comma separated)</p>\
-       <textarea id="pingNames" class="rpht_textarea" name="pingNames"> </textarea>\
-       <br /><br />\
-       <p>Ping URL: <input style="width: 370px; margin-left: 44px;" type="text" id="pingURL" name="pingURL"></p>\
-       <p>Text Color: <input style="width: 370px; margin-left: 37px;" type="text" id="pingTextColor" name="pingTextColor" value="#000"></p>\
-       <p>Highlight: <input style="width: 370px; margin-left: 45px;" type="text" id="pingHighlightColor" name="pingHighlightColor" value="#FFA"></p>\
-       <br>\<p>Matching options</p>\
-       <input style="width: 40px;" type="checkbox" id="pingBoldEnable" name="pingBoldEnable"><strong>Bold</strong>\
-       <input style="width: 40px;" type="checkbox" id="pingItalicsEnable" name="pingItalicsEnable"><em>Italics</em>\
-       <input style="width: 40px;" type="checkbox" id="pingExactMatch" name="pingExactMatch">Exact match\
-       <input style="width: 40px;" type="checkbox" id="pingCaseSense" name="pingCaseSense">Case sensitive\
-       <br>\
-       <p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">\
-         <strong>PM Away Messaging</strong>&nbsp;\
-       </span></p><br />\
-       <p>Username: </p>\
-       <select style="width: 403px;" id="pmNamesDroplist" size="5"></select><br><br>\
-       <p>Away Message: <input style="margin-left: 14px; width: 300px;" type="text" id="awayMessageTextbox" name="awayMessageTextbox" maxlength="300" placeholder="Away message..."></p>\
-       <br>\
-       <p style="margin-left: 285px;"><button type="button" id="setAwayButton">Enable</button> <button type="button" id="removeAwayButton">Disable</button></p>\
-       <p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">\
-         <strong>Extra Options</strong>&nbsp;\
-       </span></p> <br />\
-       <input style="width: 40px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable" checked>No room links\
-       <input style="width: 40px;" type="checkbox" id="imgIconDisable" name="imgIconDisable">No image icons (in chat)\
-       <br /><br />\
-       <p>Chat history: <input style="margin-left: 27px; width: 300px;" type="text" id="chatHistory" name="chatHistory" value="300"><br /><br />\</p>\
-     </div>\
-     <br />\
-     <h3 class="rpht_headers" id="diceHeader">Random Number Generators</h3>\
-     <div id="diceForm" style="display:none;">\
-       <p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">\
-         <strong>Type</strong>&nbsp;\
-       </span></p> <br />\
-       <form>\
-        <input style="width: 50px;" type="radio" name="rng" value="coin" id="coinRadio"> Coin tosser\
-        <input style="width: 50px;" type="radio" name="rng" value="dice" id="diceRadio" checked> Dice roller\
-        <input style="width: 50px;" type="radio" name="rng" value="rng" id="rngRadio"> General RNG\
-       </form>\
-       <p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">\
-         <strong>Options</strong>&nbsp;\
-       </span></p> <br />\
-       <div id="diceOptions">\
-         <p>Number of die  <input style="width: 300px; margin-left: 20px;" type="number" id="diceNum" name="diceNum" max="10" min="1" value="2"></p>\
-         <p>Sides <input style="width: 300px; margin-left: 69px;" type="number" id="diceSides" name="diceSides" max="100" min="2" value="6"></p>\
-       </div>\
-       <div id="rngOptions" style="display: none;">\
-         <p>Minimum: <input style="width: 300px; margin-left: 43px;" type="number" id="rngMinNumber" name="rngMinNumber" max="4294967295" min="-4294967296" value="0"></p>\
-         <p>Maximum: <input style="width: 300px; margin-left: 39px;" type="number" id="rngMaxNumber" name="rngMaxNumber" max="4294967295" min="-4294967296" value="10"></p>\
-       </div>\
-       <button type="button" id="rngButton">Let\'s roll!</button>\
-     </div>\
-     <br />\
-     <h3 class="rpht_headers" id="blockHeader">Friends/Blocking</h3>\
-     <div id="blockForm" style="display:none;">\
-       <p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">\
-         <strong>Block</strong>&nbsp;\
-       </span></p> <br />\
-       <p>User: <input style="width: 400px; margin-left: 69px;" type="text" id="nameCheckTextbox" name="nameCheckTextbox" placeholder="User to block"></p>\
-       <button style="margin-left: 357px;" type="button" id="blockButton">Block</button><br>\
-       <br />\
-       <p>Blocked users</p>\
-       <select style="width: 100%;" size="5" id="blockedDropList"></select>\
-       <br />\
-       <button style="margin-left: 341px;" type="button" id="unblockButton">Unblock</button>\
-     </div>\
-     <br />\
-     <h3 class="rpht_headers" id="moddingHeader">Modding</h3>\
-     <div id="moddingForm" style="display:none;">\
-       <p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">\
-         <strong>Mod Commands</strong>&nbsp;\
-       </span></p><br />\
-       <p>This will only work if you\'re actually a mod and you own the user name.</p>\
-       <br />\
-       <p>Room-Name pair <select style="width: 300px; margin-left: 4px;" id="roomModSelect"></p>\
-       <option value=""></option>\
-       </select><br /><br />\
-       <p>Room:  <input style="width: 300px; margin-left: 61px;" type="text" id="modRoomTextInput" placeholder="Room"></p\
-       <br /><br />\
-       <p>Mod name: <input style="width: 300px; margin-left: 35px;" type="text" id="modFromTextInput" placeholder="Your mod name"></p>\
-       <br />\
-       <p>Message: <input style="width: 300px; margin-left: 45px;" type="text" id="modMessageTextInput" placeholder="Message"></p>\
-       <br />\
-       <p>Perform action on these users (semicolon separated with no space between): </p>\
-       <textarea name="modTargetTextInput" id="modTargetTextInput" class="rpht_textarea"></textarea>\
-       <br />\
-       <button type="button" id="kickButton">Kick</button>\
-       <button style="margin-left: 30px;" type="button" id="banButton">Ban</button>\
-       <button type="button" id="unbanButton">Unban</button>\
-       <button style="margin-left: 30px;"type="button" id="modButton">Mod</button>\
-       <button type="button" id="unmodButton">Unmod</button>\
-       <br /><br />\
-       <p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">\
-         <strong>Flood Detection</strong>&nbsp;\
-       </span></p><br />\
-       <input style="width: 40px;" type="checkbox" id="floodDetectEnable" name="floodDetectEnable">Enable flood detection\
-       <input style="width: 40px;" type="checkbox" id="floodDetectBan" name="floodDetectBan">Ban instead of kick\
-       <br /><br />\
-       <p>Message: <input style="width: 300px; margin-left: 45px;" type="text" id="floodDetectMsg" placeholder="Message"></p>\
-     </div>\
-     <br />\
-     <h3 class="rpht_headers" id="importExportHeader">Import/Export Settings</h3>\
-     <div id="importExportForm" style="display:none;">\
-       <br />\
-       <p>Press "Export" to export savable settings. To import settings, past them into the text box and press "Import".</p><br />\
-       <textarea name="importExportText" id="importExportTextarea" class="rpht_textarea" ></textarea>\
-       <br />\
-       <button type="button" id="exportButton">Export</button>\
-       <button style="margin-left: 298px;" type="button" id="importButton">Import</button>\
-       <br>\
-     </div>\
-     <br />\
-     <h3 class="rpht_headers" id="aboutHelpHeader">About/Help</h3>\
-     <div id="aboutHelpForm" style="display:none;">\
-       <br><p>Click on the "More Settings" button again to save your settings!</p>\
-       <p>You may need to refresh the chat for the settings to take effect.</p>\
-       <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
-       <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 2.0.0b</p>\
-       <br>\
-     </div>\
-   </div>\
- </div>';
+  <div id="settingsBox" style="display: none; position: absolute; top: 35px; z-index: 9999999; height: 500px; width: 480px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.7); right: 85px; background: url(&quot;http://www.rphaven.com/css/img/aero-bg.png&quot;) repeat scroll 0px 0px transparent; padding: 5px;" left="">\
+    <h3 style="text-align: center; color:#000;">RPH Tools</h3>\
+    <div id="settingsContainer" style="height: 470px; width: 100%; overflow: auto; background: rgb(51, 51, 51); padding: 10px; border-radius: 5px; font-size: 0.8em;">\
+      <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="pingHeader">Chat room and PM options</h3>\
+      <div id="ping_form" style="display:none;">\
+        <p><strong>Chat history</strong></p>\
+        <p>Maximum number of lines per chat room (may lag PC if number is too high)</p>\
+        <input style="width: 400px;" type="text" id="chatHistory" name="chatHistory" value="300"><br /><br />\
+        <p><strong>User text color</strong></p>\
+        <p>Enter a user name and text color (RGB hex value with hashtag):</p>\
+        <p>Value for each channel cannot exceed D2 for 6 characters or D for 3.</p>\
+        <input style="width: 260px;" type="text" id="userNameTextbox" name="userNameTextbox" placeholder="Username">\
+        <input style="width: 80px;" type="text" id="userNameTextColor" name="userNameTextColor" value="#111">\
+        <button type="button" id="userNameTextColorButton">Set color</button>\
+        <br /><br />\
+        <p><strong>Ping settings</strong></p>\
+        <p>\
+          Enter names you want to be pinged. Split them with commas.<br>\
+          e.g. Character Name,Example,John Smith\
+        </p>\
+        <textarea name="pingNames" id="pingNames" style="background: rgb(255, 255, 255); height: 250px; width: 390px;"> </textarea>\
+        <br>\
+        <p>Ping URL (must be WAV, MP3, or OGG file):</p>\
+        <input style="width: 370px;" type="text" id="pingURL" name="pingURL"><br>\
+        <p>Text Color (RGB hex value with hashtag, E.g., #ABCDEF):</p>\
+        <input style="width: 370px;"type="text" id="pingTextColor" name="pingTextColor" value="#000"><br>\
+        <p>Highlight Color (RGB hex value with hashtag, E.g., #ABCDEF):</p>\
+        <input style="width: 370px;" type="text" id="pingHighlightColor" name="pingHighlightColor" value="#FFA"><br>\
+        <p>Matching options</p>\
+        <input style="width: 40px;" type="checkbox" id="pingBoldEnable" name="pingBoldEnable"><strong>Bold</strong>\
+        <input style="width: 40px;" type="checkbox" id="pingItalicsEnable" name="pingItalicsEnable"><em>Italics</em>\
+        <input style="width: 40px;" type="checkbox" id="pingExactMatch" name="pingExactMatch">Exact match\
+        <input style="width: 40px;" type="checkbox" id="pingCaseSense" name="pingCaseSense">Case sensitive\
+        <br><br><hr>\
+        <p><strong>PM options</strong></p><br />\
+        <p>Away message:</p>\
+        <p>Select a name to be away, set its away message, then press "Enable". To\
+           turn off away messages for that name, select it and press "Disable". Names\
+           that are away will be marked.</p>\
+        <select style="width: 300px;" id="pmNamesDroplist" size="5"></select><br><br>\
+        <input style="width: 400px;" type="text" id="awayMessageTextbox" name="awayMessageTextbox" maxlength="300" placeholder="Away message...">\
+        <button type="button" id="setAwayButton">Enable</button>\
+        <button type="button" id="removeAwayButton">Disable</button>\
+        <br><br><hr>\
+        <p><strong>Extra options</strong></p><br />\
+        <input style="width: 40px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable" checked>No room links\
+        <input style="width: 40px;" type="checkbox" id="imgIconDisable" name="imgIconDisable">No image icons (in chat)\
+      </div>\
+      <br />\
+      <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="diceHeader">Random Number Generators</h3>\
+      <div id="diceForm" style="display:none;">\
+        <p><strong>Coin tosser</strong></p>\
+        <br />\
+        <button type="button" id="coinTossButton">Flip it!</button>\
+        <hr>\
+        <p><strong>Dice roller</strong></p>\
+        <br />\
+        <p>Number of die <span style="margin-left: 100px;">Sides</span></p>\
+        <input style="width: 80px;" type="number" id="diceNum" name="diceNum" max="10" min="1" value="2">\
+        <input style="width: 80px; margin-left: 100px;" type="number" id="diceSides" name="diceSides" max="100" min="2" value="6">\
+        <br />\
+        <button type="button" id="diceButton">Let\'s Roll!</button>\
+        <hr>\
+        <p><strong>General RNG</strong></p>\
+        <br />\
+        <p>Minimum (inclusive)</p>\
+        <input style="width: 200px;" type="number" id="rngMinNumber" name="rngMinNumber" max="4294967295" min="-4294967296" value="0">\
+        <br />\
+        <p>Maximum (exclusive)</p>\
+        <input style="width: 200px;" type="number" id="rngMaxNumber" name="rngMaxNumber" max="4294967295" min="-4294967296" value="10">\
+        <br />\
+        <button type="button" id="rngButton">Randomize!</button>\
+      </div>\
+      <br />\
+      <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="blockHeader">Friends/Blocking</h3>\
+      <div id="blockForm" style="display:none;">\
+        <br>\
+        <p>Enter user name to block.</p>\
+        <input style="width: 400px;" type="text" id="nameCheckTextbox" name="nameCheckTextbox" placeholder="User to block">\
+        <button type="button" id="blockButton">Block</button><br>\
+        <br />\
+        <p>Blocked users</p>\
+        <select style="width: 100%;" size="5" id="blockedDropList"></select>\
+        <br />\
+        <button type="button" id="unblockButton">Unblock</button>\
+      </div>\
+      <br />\
+      <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="moddingHeader">Mod Commands</h3>\
+      <div id="moddingForm" style="display:none;">\
+        <br>\
+        <p>This will only work if you\'re actually a mod and you own the user name.</p>\
+        <br />\
+        <p>Room</p>\
+        <input style="width: 100%;" type="text" id="modRoomTextInput" placeholder="Room">\
+        <br />\
+        <p>Your username that\'s a mod</p>\
+        <input style="width: 100%;" type="text" id="modFromTextInput" placeholder="Your username">\
+        <br />\
+        <p id="modMessageLabel">Message</p>\
+        <input style="width: 100%;" type="text" id="modMessageTextInput" placeholder="Message">\
+        <br />\
+        <p>Perform action on these users (separate each name with a semi-colon, no space between names): </p>\
+        <textarea name="modTargetTextInput" id="modTargetTextInput" style="background: rgb(255, 255, 255); height: 100px; width: 390px;"></textarea>\
+        <br />\
+        <button type="button" id="kickButton">Kick</button>\
+        <button style="margin-left: 30px;" type="button" id="banButton">Ban</button>\
+        <button type="button" id="unbanButton">Unban</button>\
+        <button style="margin-left: 30px;"type="button" id="modButton">Mod</button>\
+        <button type="button" id="unmodButton">Unmod</button>\
+        <br /><br />\
+        <hr>\
+        <p><strong>Flood detection</strong></p>\
+        <input style="width: 40px;" type="checkbox" id="floodDetectEnable" name="floodDetectEnable">Enable flood detection\
+        <input style="width: 40px;" type="checkbox" id="floodDetectBan" name="floodDetectBan">Ban instead of kick\
+        <br />\
+        <p id="modMessageLabel">Message</p>\
+        <input style="width: 100%;" type="text" id="floodDetectMsg" placeholder="Message">\
+      </div>\
+      <br />\
+      <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="importExportHeader">Import/Export Settings</h3>\
+      <div id="importExportForm" style="display:none;">\
+        <br />\
+        <p>Press "Export" to export savable settings. To import settings, past them into the text box and press "Import".</p><br />\
+        <textarea name="importExportText" id="importExportTextarea" style="background: rgb(255, 255, 255); height: 250px; width: 390px;"></textarea>\
+        <br />\
+        <button type="button" id="exportButton">Export</button>\
+        <button style="margin-left: 288px;" type="button" id="importButton">Import</button>\
+        <br>\
+      </div>\
+      <br />\
+      <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="aboutHelpHeader">About/Help</h3>\
+      <div id="aboutHelpForm" style="display:none;">\
+        <br><p>Click on the "More Settings" button again to save your settings!</p>\
+        <p>You may need to refresh the chat for the settings to take effect.</p>\
+        <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |\
+        <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 1.4.0</p>\
+        <br>\
+      </div>\
+    </div>\
+  </div>';
 
 /* If this doesn't print, something happened with the global vars */
 console.log('RPH Tools script start');
@@ -229,6 +231,7 @@ console.log('RPH Tools script start');
 $(function(){
   _on('accounts', function(){
     var users = account.users;
+
     for(i = 0; i < users.length; i++){
       getUserName(users[i]);
     }
@@ -242,6 +245,7 @@ $(function(){
   _on('remove-ignore', function(data){
     var names = document.getElementById("blockedDropList");
     UserChangeIgnore(data.id, false);
+    console.log('RPH Tools: Unblocking user', data.id);
 
     for (var i=0; i<names.length; i++){
       if (names.options[i].value == data.id )
@@ -265,7 +269,9 @@ $(function(){
   settingsTool.button = $('#top a.pings');
 
   /* Load settings. */
+
   if (typeof(storage) != "undefined"){
+
     if (localStorage.getItem("chatSettings") !== null){
       pingSettings = JSON.parse(localStorage.getItem("chatSettings"));
       snd = new Audio(pingSettings.ping_url);
@@ -287,6 +293,7 @@ $(function(){
       }
     }
     else{ /* Fallback to cookies */
+      console.log("RPH Tools - No blocked users in localStorage, grabbing cookie.");
       loadBlockSettings();
     }
   }
@@ -299,6 +306,7 @@ $(function(){
  * @brief: Sets up all the ping dialog box GUI handling.
  ****************************************************************************/
 function SetUpToolsDialog(){
+
   settingsTool.button.click(function(){
     if(settingsTool.state === false)
     {
@@ -309,7 +317,6 @@ function SetUpToolsDialog(){
     {
       if((pingSettings.flags & 1) > 0){
         console.log('RPH Tools - Ping settings were changed');
-        console.log('RPH Tools - Ping settings', pingSettings);
         pingSettings.flags &= ~1;
         if(validSettings === true){
           saveChatSettings(pingSettings);
@@ -320,6 +327,7 @@ function SetUpToolsDialog(){
       }
       settingsTool.box.hide();
       settingsTool.state = false;
+      console.log('RPH Tools - Ping settings', pingSettings);
     }
   });
 
@@ -433,6 +441,34 @@ function ChatSettingsSetup(){
     pingSettings.flags |= 1;
   });
 
+  $('#userNameTextColorButton').click(function(){
+    var text_color = document.getElementById('userNameTextColor').value;
+    if(testPingColor(text_color) === false ||
+       testTextColorRange(text_color) === false){
+
+      console.log("RPH Tools - Bad text color", text_color);
+      mark_problem('userNameTextColor', true);
+    }
+    else{
+      var userName = document.getElementById('userNameTextbox').value;
+      var userToEdit = null;
+      mark_problem('userNameTextColor', false);
+
+      text_color = text_color.substring(1,text_color.length);
+      getUserByName(userName, function(User){
+        userToEdit = User;
+      });
+
+      if(userToEdit !== null){
+        mark_problem('userNameTextbox', false);
+        sendToSocket('modify', {userid:userToEdit.props.id, color:text_color});
+      }
+      else{
+        mark_problem('userNameTextbox', true);
+      }
+    }
+  });
+
   $('#roomLinksDisable').change(function(){
     pingSettings.flags ^= 32;
     pingSettings.flags |= 1;
@@ -441,33 +477,6 @@ function ChatSettingsSetup(){
   $('#imgIconDisable').change(function(){
     pingSettings.flags ^= 128;
     pingSettings.flags |= 1;
-  });
-
-  $('#userNameTextColorButton').click(function(){
-    var text_color = document.getElementById('userNameTextColor').value;
-    if(testPingColor(text_color) === false ||
-      testTextColorRange(text_color) === false){
-      mark_problem('userNameTextColor', true);
-    }
-    else{
-      var userId = $('#userColorDroplist option:selected').val();
-      var userToEdit = null;
-      mark_problem('userColorDroplist', false);
-
-      text_color = text_color.substring(1,text_color.length);
-      getUserById(userId, function(User){
-        userToEdit = User;
-      });
-
-      if(userToEdit !== null){
-        console.log('Editing color: ', userToEdit , text_color);
-        mark_problem('userColorDroplist', false);
-        sendToSocket('modify', {userid:userToEdit.props.id, color:text_color});
-      }
-      else{
-        mark_problem('userColorDroplist', true);
-      }
-    }
   });
 
   $('#pmNamesDroplist').change(function(){
@@ -662,12 +671,17 @@ function loadChatSettings(){
     for( i = 0; i < keys.length; i++){
       pingSettings[keys[i]] = settings_array[i];
     }
+    console.log('RPH Tools - Ping cookie found for', cookie_name);
 
     //Refresh the cookie
     saveChatSettings(pingSettings);
+    console.log('RPH Tools - Refreshing ping settings cookie');
 
     //Initiate snd variable
     snd = new Audio(pingSettings.ping_url);
+  }
+  else{
+    console.log('RPH Tools - No cookie found for', cookie_name);
   }
 }
 
@@ -689,8 +703,6 @@ function getUserName(user_id){
   getUserById(user_id, function(User){
     $('#pmNamesDroplist').append('<option value="' + user_id + '">' +
        User.props.name + '</option>');
-    $('#userColorDroplist').append('<option value="' + user_id + '">' +
-      User.props.name + '</option>');
   });
 }
 /****************************************************************************
@@ -752,105 +764,100 @@ function DiceRollSetup(){
     }
   });
 
+  $('#coinTossButton').click(function(){
+    TossCoin();
+  });
+
+  $('#diceButton').click(function(){
+    RollDice();
+  });
+
   $('#rngButton').click(function(){
-    if ($('#coinRadio')[0].checked){
-      RunRNG('coin');
-    }
-    else if ($('#diceRadio')[0].checked){
-      RunRNG('dice');
-    }
-    else if ($('#rngRadio')[0].checked){
-      RunRNG('rng');
-    }
-
+    GetRandomNum();
   });
-
-  $('#coinRadio').change(function(){
-    DisplayRNG('coin');
-  });
-  $('#diceRadio').change(function(){
-    DisplayRNG('dice');
-  });
-  $('#rngRadio').change(function(){
-    DisplayRNG('rng');
-  });
-
 }
 
-function DisplayRNG(option){
-  if (option === 'coin')
-  {
-    $('#diceOptions').hide();
-    $('#rngOptions').hide();
-    $('#rngButton').text('Flip it!');
-  }
-  else if (option === 'dice'){
-    $('#diceOptions').show();
-    $('#rngOptions').hide();
-    $('#rngButton').text('Let\'s roll!');
-  }
-  else if (option === 'rng'){
-    $('#diceOptions').hide();
-    $('#rngOptions').show();
-    $('#rngButton').text('Randomize!');
-  }
-}
-
-function RunRNG(action){
+/****************************************************************************
+ * @brief:    Generates and posts a random coin toss
+ ****************************************************************************/
+function TossCoin(){
   var class_name = $('li.active')[0].className.split(" ");
   var room_name = $('li.active').find("span:first").text();
   var this_room = getRoom(room_name);
   var userID = parseInt(class_name[2].substring(0,6));
-  var new_msg = '';
+  var new_msg = '(( Coin toss: ';
 
-  if (action == "coin"){
-    new_msg = '(( Coin toss: ';
-    if(Math.ceil(Math.random() * 2) == 2){
-      new_msg += '**heads!**))';
-    }
-    else{
-      new_msg += '**tails!**))';
-    }
+  if(Math.ceil(Math.random() * 2) == 2){
+    new_msg += '**heads!**))';
   }
-  else if (action == "dice"){
-    var dieNum = parseInt($('#diceNum').val());
-    var dieSides =  parseInt($('#diceSides').val());
-    new_msg = '/me rolled ' + dieNum + 'd' + dieSides + ':';
-
-    for(i = 0; i < dieNum; i++){
-      new_msg += ' ';
-      new_msg += Math.ceil(Math.random() * dieSides);
-    }
-  }
-  else if (action == "rng"){
-    var minNum = parseInt($('#rngMinNumber').val());
-    var maxNum =  parseInt($('#rngMaxNumber').val());
-    new_msg = '(( Random number generated: **';
-
-    new_msg += Math.floor((Math.random() * (maxNum - minNum) + minNum)) + '** ))';
+  else{
+    new_msg += '**tails!**))';
   }
 
   this_room.sendMessage(new_msg, userID);
-  DisableButtons(action);
+  DisableButtons();
+}
+
+/****************************************************************************
+ * @brief:    Generates and posts a random dice roll
+ ****************************************************************************/
+function RollDice(){
+  var class_name = $('li.active')[0].className.split(" ");
+  var room_name = $('li.active').find("span:first").text();
+  var this_room = getRoom(room_name);
+  var userID = parseInt(class_name[2].substring(0,6));
+  var dieNum = parseInt($('#diceNum').val());
+  var dieSides =  parseInt($('#diceSides').val());
+  var new_msg = '/me rolled ' + dieNum + 'd' + dieSides + ': ';
+
+  for(i = 0; i < dieNum; i++){
+    new_msg += Math.ceil(Math.random() * dieSides);
+    new_msg += ' ';
+  }
+  this_room.sendMessage(new_msg, userID);
+  DisableButtons();
+}
+
+/****************************************************************************
+ * @brief:    Generates and posts a random number.
+ ****************************************************************************/
+function GetRandomNum(){
+  var class_name = $('li.active')[0].className.split(" ");
+  var room_name = $('li.active').find("span:first").text();
+  var this_room = getRoom(room_name);
+  var userID = parseInt(class_name[2].substring(0,6));
+  var minNum = parseInt($('#rngMinNumber').val());
+  var maxNum =  parseInt($('#rngMaxNumber').val());
+  var new_msg = '(( Random number generated: **';
+
+  new_msg += Math.floor((Math.random() * (maxNum - minNum) + minNum)) + '** ))';
+
+  this_room.sendMessage(new_msg, userID);
+  DisableButtons();
 }
 
 /****************************************************************************
  * @brief:    Disables the RNG buttons for three seconds.
  ****************************************************************************/
-function DisableButtons(action){
+function DisableButtons(){
+
+  $('#coinTossButton').text('Wait...');
+  $('#diceButton').text('Wait...');
   $('#rngButton').text('Wait...');
-  document.getElementById("rngRadio").disabled = true;
-  document.getElementById("diceRadio").disabled = true;
-  document.getElementById("coinRadio").disabled = true;
+
+  document.getElementById("coinTossButton").disabled = true;
+  document.getElementById("diceButton").disabled = true;
   document.getElementById("rngButton").disabled = true;
 
   setTimeout(function(){
-    document.getElementById("rngRadio").disabled = false;
-    document.getElementById("diceRadio").disabled = false;
-    document.getElementById("coinRadio").disabled = false;
-    document.getElementById("rngButton").disabled = false;
-    DisplayRNG(action);
-  }, 3000);
+      $('#coinTossButton').text('Flip it!');
+      $('#diceButton').text("Let's roll!");
+      $('#rngButton').text('Randomize!');
+
+      document.getElementById("diceButton").disabled = false;
+      document.getElementById("coinTossButton").disabled = false;
+      document.getElementById("rngButton").disabled = false;
+    }, 3000);
 }
 /****************************************************************************
  *                          BLOCKING FUNCTIONS
@@ -994,23 +1001,6 @@ function ModdingSetup(){
     }
   });
 
-  $('#roomModSelect').change(function(){
-    var roomModPair_sel = document.getElementById("roomModSelect");
-    var roomModVal = roomModPair_sel.options[roomModPair_sel.selectedIndex].value;
-
-    console.log('RPH Tools - Selected room-mod pair:', roomModVal, roomNamePairs[roomModVal]);
-
-    if (roomNamePairs[roomModVal] !== undefined){
-      document.getElementById("modRoomTextInput").value = roomNamePairs[roomModVal].room;
-      document.getElementById("modFromTextInput").value = roomNamePairs[roomModVal].modName;
-    }
-    else{
-      document.getElementById("modRoomTextInput").value = '';
-      document.getElementById("modFromTextInput").value = '';
-    }
-  });
-
-
   $('#kickButton').click(function(){
     modAction('kick');
   });
@@ -1033,9 +1023,11 @@ function ModdingSetup(){
 
   $('#floodDetectEnable').change(function(){
     tempSettings ^= 1;
+    console.log('RPH Tools - Flood detection - ', (tempSettings & 1));
   });
   $('#floodDetectBan').change(function(){
     tempSettings ^= 2;
+    console.log('RPH Tools - Flood detection ban - ', (tempSettings & 2));
   });
 }
 
@@ -1077,20 +1069,24 @@ function emitModAction(action, targetName){
 
     if(action === 'ban'){
       modMessage = "Banning: " + target + " by: " + user + " In room: " + room;
+      console.log('RPH Tools - ', modMessage);
     }
     else if (action === 'unban'){
       modMessage = "Unbanning: " + target + " by: " + user + " In room: " + room;
+      console.log('RPH Tools - ', modMessage);
     }
     else if (action === 'add-mod'){
       modMessage = "Modding: " + target + " by: " + user + " In room: " + room;
+      console.log('RPH Tools - ', modMessage);
     }
     else if (action === 'remove-mod'){
       modMessage = "Unmodding: " + target + " by: " + user + " In room: " + room;
+      console.log('RPH Tools - ', modMessage);
     }
     else if (action === 'kick'){
       modMessage = "Kicking: " + target + " by: " + user + " In room: " + room;
+      console.log('RPH Tools - ', modMessage);
     }
-    console.log('RPH Tools - ', modMessage);
   });
 }
 
@@ -1177,6 +1173,10 @@ function ImportSettings(){
 function setupPMFunctions(){
   _on('pm', function(data){
     getUserById(data.to, function(fromUser){
+      if( fromUser.blocked ){
+        return;
+      }
+
       /* Remove links */
       if (pingSettings.flags & 32){
         removeRoomLinksInPM();
@@ -1240,7 +1240,6 @@ function doRoomJoinSetup(room){
   var charID = className.match(regex)[0];
   var classes = '';
   var userId = 0;
-  var userName = '';
 
   charID = charID.substring(1,charID.length);
   getUserById(charID, function(User){
@@ -1254,31 +1253,16 @@ function doRoomJoinSetup(room){
     $('textarea.' + idRoomName).css('color', "#" + User.props.color);
 
     userId = User.props.id;
-    userName = User.props.name;
     classes = getClasses(User, thisRoom);
     console.log('RPH Tools - User class:,', User.props.name, classes);
   });
 
-  /* If the user is a mod in the room, create a room tracker. */
+  /* If the user is a mod in the room, initiate auto kicking (if enabled)*/
   if (classes.indexOf("mod") > -1 ||
       classes.indexOf("owner") > -1 ){
-    var roomNamePair = thisRoom.props.name + ': ' + userName;
-    var roomNameValue = thisRoom.props.name + '.' + userId;
-    var roomNameObj = {
-      'room': thisRoom.props.name,
-      'modName': userName,
-      'modId': userId
-    };
-
     roomTracking[thisRoom.props.name] = {};
     roomTracking[thisRoom.props.name]['!mod'] = userId;
     console.log("RPH Tools - Room Tracking", roomTracking);
-
-    if (roomNamePairs[roomNameValue] === undefined){
-      roomNamePairs[roomNameValue] = roomNameObj;
-      $('#roomModSelect').append('<option value="' + roomNameValue + '">' + roomNamePair + '</option>');
-      console.log("RPH Tools - added room mod pair", roomNamePairs);
-    }
   }
 }
 
@@ -1315,12 +1299,10 @@ function postMessage(thisRoom, data){
       }
     }
 
-    /* Detect flooding. Evil multi-nested variable checking. */
-    if ( (tempSettings & 0x01) > 0 &&                           /* 1. Is this setting even enabled?*/
-          classes.indexOf("mod") === -1 &&                      /* 2. Is the name not a mod? */
-          classes.indexOf("owner") === -1  &&                   /* 3. Is the name not an owner? */
-          roomTracking[thisRoom.props.name] !== undefined &&    /* 4. Has a tracker been created? */
-         (Date.now()/1000 - data.time) < 60                     /* 5. Is the message within a minute of now? */
+    /* Detect flooding */
+    if ( roomTracking[thisRoom.props.name] !== undefined &&  /* 1. If there's a room tracking object for this room */
+        (tempSettings & 0x01) > 0 &&                         /* 2. The setting is enabled.*/
+        (Date.now()/1000 - data.time) < 60                   /* 3. The time is less than 60 seconds (for back log when joining)*/
       ){
       if(roomTracking[thisRoom.props.name][User.props.id] === undefined){
         var entry = {
@@ -1337,7 +1319,14 @@ function postMessage(thisRoom, data){
         roomTracking[thisRoom.props.name][User.props.id].last_time = data.time;
 
         if (timeDiff <= 1){
-          roomTracking[thisRoom.props.name][User.props.id].rate += 1;
+          if (roomTracking[thisRoom.props.name][User.props.id].rate < 2)
+          {
+            roomTracking[thisRoom.props.name][User.props.id].rate += 1;
+          }
+        }
+        else if (timeDiff > 4){
+          roomTracking[thisRoom.props.name][User.props.id].start_time = data.time;
+          roomTracking[thisRoom.props.name][User.props.id].rate = 0;
         }
         else if (timeDiff > 1){
           if (roomTracking[thisRoom.props.name][User.props.id].rate > 0){
@@ -1345,12 +1334,12 @@ function postMessage(thisRoom, data){
           }
         }
 
-        if ((data.time - roomTracking[thisRoom.props.name][User.props.id].start_time) > 5){
-          roomTracking[thisRoom.props.name][User.props.id].start_time = data.time;
-          roomTracking[thisRoom.props.name][User.props.id].rate = 0;
+        if (roomTracking[thisRoom.props.name][User.props.id].rate > 0 && msg.length > 30){
+          floodDetected = true;
+          console.log('RPH Tools - Flood detected for impossible WPM');
         }
-
-        if (roomTracking[thisRoom.props.name][User.props.id].rate >= 4){
+        else if (roomTracking[thisRoom.props.name][User.props.id].rate > 1 &&
+                 data.time - roomTracking[thisRoom.props.name][User.props.id].start_time > 2){
           floodDetected = true;
           console.log('RPH Tools - Flood detected.');
         }
@@ -1366,7 +1355,7 @@ function postMessage(thisRoom, data){
           floodDetected = false;
         }
 
-        console.log("RPH Tools - Flooding results for this user (timeDiff, name, tracking object)", timeDiff, User.props.name, roomTracking[thisRoom.props.name][User.props.id]);
+        console.log("RPH Tools - Flooding results for this user", User.props.name, roomTracking[thisRoom.props.name][User.props.id]);
       }
     }
 

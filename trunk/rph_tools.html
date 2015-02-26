@@ -1,0 +1,160 @@
+
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>RPH Tools</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          p{ color: #EEE;
+            font-family:"Trebuchet MS", verdana;
+          }
+        </style>
+
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+      <div id="settingsBox" style="z-index: 9999999; height: 500px; width: 440px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.7); right: 85px; background: url(&quot;http://www.rphaven.com/css/img/aero-bg.png&quot;) repeat scroll 0px 0px transparent; padding: 5px;" left="">\
+        <h3 style="text-align: center; color:#000;">RPH Tools</h3>\
+        <div id="settingsContainer" style="height: 470px; width: 100%; overflow: auto; background: rgb(51, 51, 51); padding: 10px; border-radius: 5px; font-size: 0.8em;">\
+          <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="pingHeader">Chat room and PM options</h3>\
+          <div id="ping_form" style="">\
+            <p style="height: 2px; background: #EEE;"><span style="background: #333; position: relative; top: -0.6em;">\
+              <strong>User text color</strong>&nbsp;\
+            </span></p>\
+            <p>Username: <select style="margin-left: 50px; width: 300px;" id="userNameDropList"></select></p>\
+            <p>Text color: <input style="margin-left: 50px; width: 294px;" type="text" id="userNameTextColor" name="userNameTextColor" value="#111"></p>\
+            <button type="button" style="margin-left: 333px;" id="userNameTextColorButton">Set color</button>\
+            <br />\
+            <p style="height: 2px; background: #EEE;"><span style="background: #333; position: relative; top: -0.6em;">\
+              <strong>Pings</strong>&nbsp;\
+            </span></p>\
+            <p>\
+              Names to be pinged<br>\
+            </p>\
+            <textarea name="pingNames" id="pingNames" style="background: rgb(255, 255, 255); height: 100px; width: 390px;"> </textarea>\
+            <br>\
+            <p>Ping URL:   <input style="margin-left: 30px; width: 300px;" type="text" id="pingURL" name="pingURL"></p>\
+            <p>Text Color: <input style="margin-left: 30px; width: 300px;"type="text" id="pingTextColor" name="pingTextColor" value="#000"></p>\
+            <p>Highlight:  <input style="margin-left: 30px; width: 300px;" type="text" id="pingHighlightColor" name="pingHighlightColor" value="#FFA"></p>\
+            <p>Matching options</p>\
+            <input style="width: 40px;" type="checkbox" id="pingBoldEnable" name="pingBoldEnable"><strong>Bold</strong>\
+            <input style="width: 40px;" type="checkbox" id="pingItalicsEnable" name="pingItalicsEnable"><em>Italics</em>\
+            <input style="width: 40px;" type="checkbox" id="pingExactMatch" name="pingExactMatch">Exact match\
+            <input style="width: 40px;" type="checkbox" id="pingCaseSense" name="pingCaseSense">Case sensitive\
+            <br /><br />\
+            <p style="height: 2px; background: #EEE;"><span style="background: #333; position: relative; top: -0.6em;">\
+              <strong>PM Away Message</strong>&nbsp;\
+            </span></p>\
+            <p>Username:</p>\
+            <select style="width: 390px;" id="pmNamesDroplist" size="5"></select><br><br>\
+            <input style="width: 400px;" type="text" id="awayMessageTextbox" name="awayMessageTextbox" maxlength="300" placeholder="Away message...">\
+            <br /><br />\
+            <button type="button" id="setAwayButton">Enable</button>\
+            <button type="button" id="removeAwayButton">Disable</button>
+            <br /><br />
+            <p style="height: 2px; background: #EEE;"><span style="background: #333; position: relative; top: -0.6em;">
+              <strong>Extra options</strong>&nbsp;
+            </span></p>
+            <input style="width: 40px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable" checked>No room links
+            <input style="width: 40px;" type="checkbox" id="imgIconDisable" name="imgIconDisable">No image icons (in chat)
+            <p>Maximum lines per chat room: <input style="300px;" type="text" id="chatHistory" name="chatHistory" value="300"></p>
+          </div>
+          <br />
+          <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="diceHeader">Random Number Generators</h3>
+          <div id="diceForm" style="">
+            <p><strong>Coin tosser</strong></p>
+            <br />
+            <button type="button" id="coinTossButton">Flip it!</button>\
+            <hr>\
+            <p><strong>Dice roller</strong></p>\
+            <br />\
+            <p>Number of die <span style="margin-left: 100px;">Sides</span></p>\
+            <input style="width: 80px;" type="number" id="diceNum" name="diceNum" max="10" min="1" value="2">\
+            <input style="width: 80px; margin-left: 100px;" type="number" id="diceSides" name="diceSides" max="100" min="2" value="6">\
+            <br />\
+            <button type="button" id="diceButton">Let's Roll!</button>\
+            <hr>\
+            <p><strong>General RNG</strong></p>\
+            <br />\
+            <p>Minimum (inclusive)</p>\
+            <input style="width: 200px;" type="number" id="rngMinNumber" name="rngMinNumber" max="4294967295" min="-4294967296" value="0">\
+            <br />\
+            <p>Maximum (exclusive)</p>\
+            <input style="width: 200px;" type="number" id="rngMaxNumber" name="rngMaxNumber" max="4294967295" min="-4294967296" value="10">\
+            <br />\
+            <button type="button" id="rngButton">Randomize!</button>o\
+          </div>\
+          <br />\
+          <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="blockHeader">Friends/Blocking</h3>\
+          <div id="blockForm" style="">\
+            <br>\
+            <p>Enter user name to block.</p>\
+            <input style="width: 400px;" type="text" id="nameCheckTextbox" name="nameCheckTextbox" placeholder="User to block">\
+            <button type="button" id="blockButton">Block</button><br>\
+            <br />\
+            <p>Blocked users</p>\
+            <select style="width: 100%;" size="5" id="blockedDropList"></select>\
+            <br />\
+            <button type="button" id="unblockButton">Unblock</button>\
+          </div>\
+          <br />\
+          <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="moddingHeader">Mod Commands</h3>\
+          <div id="moddingForm" style="">
+            <br>
+            <p>This will only work if you're actually a mod and you own the user name.</p>
+            <br />
+            <p>Room</p>
+            <input style="width: 100%;" type="text" id="modRoomTextInput" placeholder="Room">
+            <br />
+            <p>Your username that's a mod</p>
+            <input style="width: 100%;" type="text" id="modFromTextInput" placeholder="Your username">
+            <br />
+            <p id="modMessageLabel">Message</p>
+            <input style="width: 100%;" type="text" id="modMessageTextInput" placeholder="Message">
+            <br />
+            <p>Perform action on these users (separate each name with a semi-colon, no space between names): </p>
+            <textarea name="modTargetTextInput" id="modTargetTextInput" style="background: rgb(255, 255, 255); height: 100px; width: 390px;"></textarea>
+            <br />
+            <button type="button" id="kickButton">Kick</button>
+            <button style="margin-left: 30px;" type="button" id="banButton">Ban</button>
+            <button type="button" id="unbanButton">Unban</button>
+            <button style="margin-left: 30px;"type="button" id="modButton">Mod</button>
+            <button type="button" id="unmodButton">Unmod</button>
+            <br /><br />
+            <hr>
+            <p><strong>Flood detection</strong></p>
+            <input style="width: 40px;" type="checkbox" id="floodDetectEnable" name="floodDetectEnable">Enable flood detection
+            <input style="width: 40px;" type="checkbox" id="floodDetectBan" name="floodDetectBan">Ban instead of kick
+            <br />
+            <p id="modMessageLabel">Message</p>
+            <input style="width: 100%;" type="text" id="floodDetectMsg" placeholder="Message">
+          </div>
+          <br />\
+          <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="importExportHeader">Import/Export Settings</h3>
+          <div id="importExportForm" style="">
+            <br />
+            <p>Press "Export" to export savable settings. To import settings, past them into the text box and press "Import".</p><br />
+            <textarea name="importExportText" id="importExportTextarea" style="background: rgb(255, 255, 255); height: 250px; width: 390px;"></textarea>
+            <br />
+            <button type="button" id="exportButton">Export</button>
+            <button style="margin-left: 288px;" type="button" id="importButton">Import</button>
+            <br>
+          </div>
+          <br />
+          <h3 style="cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;" id="aboutHelpHeader">About/Help</h3>
+          <div id="aboutHelpForm" style="">
+            <br><p>Click on the "More Settings" button again to save your settings!</p>
+            <p>You may need to refresh the chat for the settings to take effect.</p>
+            <br><p><a href="http://www.rphaven.com/topics.php?id=1" target="_blank">Report a problem</a> |
+            <a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target="_blank">Troubleshooting Tips</a> | RPH Tools 1.4.0</p>
+            <br>
+          </div>
+        </div>
+      </div>
+    </body>
+</html>
