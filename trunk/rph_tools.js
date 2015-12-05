@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    2.1.5
+// @version    2.2.0
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -65,16 +65,7 @@ var snd = null;
 /****************************************************************************/
 var awayMessages = {};
 
-/*****************************************************************************
-  Flags to store temp settings.
-  0 - Autokicking is enabled.
-  1 - Ban instead of kick
-  2 - Clone detecting is enabled
-  3 - Ban clones instead of kick
-/****************************************************************************/
 var tempSettings = 0;
-
-var roomTracking = {};
 
 var roomNamePairs = {};
 
@@ -83,6 +74,9 @@ var html =
   '<style>' +
     '.rpht_headers{cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;}' +
     '.rpht_textarea{background: rgb(255, 255, 255); height: 80px; width: 403px;}' +
+    '.rpht-block {text-align: right; margin-top: 10px;}' +
+    '.rpht-block label { display: inline-block; font-size: 1em; margin-right: 10px; }' +
+    '.rpht-block input[type=checkbox] { width: 14px; margin-right: 286px;}' +
   '</style>' +
   '<div id="settingsBox" style="display: none; position: absolute; top: 35px; z-index: 9999999; height: 500px; width: 450px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.7); right: 85px; background: url(&quot;http://www.rphaven.com/css/img/aero-bg.png&quot;) repeat scroll 0px 0px transparent; padding: 5px;" left="">' +
     '<h3 style="text-align: center; color:#000;">RPH Tools</h3>' +
@@ -91,22 +85,21 @@ var html =
       '<div id="ping_form" style="display:none;">' +
         '<p style="border-bottom: 2px solid #EEE;">' +
           '<span style="background: #333; position: relative; top: 0.7em;"><strong>User text color</strong>&nbsp;</span>' +
-        '</p><br />' +
-        '<p>Username: <select  style="width: 300px; margin-left: 37px;" id="userColorDroplist"></select><br><br>' +
-        '<p>Text color: <input style="width: 300px;  margin-left: 40px;" type="text" id="userNameTextColor" name="userNameTextColor" value="#111"></p><br/>' +
-        '<button style="margin-left: 338px;" type="button" id="userNameTextColorButton">Set color</button>' +
-        '<br />' +
+        '</p>' +
+        '<div class="rpht-block"><label>Username:</label><select  style="width: 300px;" id="userColorDroplist"></select></div>'+
+        '<div class="rpht-block"><label>Text color:</label><input style="width: 300px;" type="text" id="userNameTextColor" name="userNameTextColor" value="#111"></div>' +
+        '<div class="rpht-block"><button type="button" id="userNameTextColorButton">Set color</button></div>' +
         '<p style="border-bottom: 2px solid #EEE;">' +
           '<span style="background: #333; position: relative; top: 0.7em;"><strong>Ping Options</strong>&nbsp;</span>' +
         '</p><br />' +
         '<p>Names to be pinged (comma separated)</p>' +
         '<textarea id="pingNames" class="rpht_textarea" name="pingNames"> </textarea>' +
         '<br /><br />' +
-        '<p>Ping URL: <input style="width: 370px; margin-left: 44px;" type="text" id="pingURL" name="pingURL"></p>' +
-        '<p>Text Color: <input style="width: 370px; margin-left: 37px;" type="text" id="pingTextColor" name="pingTextColor" value="#000"></p>' +
-        '<p>Highlight: <input style="width: 370px; margin-left: 45px;" type="text" id="pingHighlightColor" name="pingHighlightColor" value="#FFA"></p>' +
+        '<div class="rpht-block"><label>Ping URL:   </label><input style="width: 370px;" type="text" id="pingURL" name="pingURL"></div>' +
+        '<div class="rpht-block"><label>Text Color: </label><input style="width: 370px;" type="text" id="pingTextColor" name="pingTextColor" value="#000"></div>' +
+        '<div class="rpht-block"><label>Highlight:  </label><input style="width: 370px;" type="text" id="pingHighlightColor" name="pingHighlightColor" value="#FFA"></div>' +
         '<br>' +
-        '<p>Matching options</p>' +
+        '<p>Matching options</p> <br/>' +
         '<input style="width: 40px;" type="checkbox" id="pingBoldEnable" name="pingBoldEnable"><strong>Bold</strong>' +
         '<input style="width: 40px;" type="checkbox" id="pingItalicsEnable" name="pingItalicsEnable"><em>Italics</em>' +
         '<input style="width: 40px;" type="checkbox" id="pingExactMatch" name="pingExactMatch">Exact match' +
@@ -115,24 +108,22 @@ var html =
         '<p style="border-bottom: 2px solid #EEE;">' +
           '<span style="background: #333; position: relative; top: 0.7em;"><strong>PM Options</strong>&nbsp; </span>' +
         '</p><br />' +
-        '<p>PM Sound: <input style="width: 370px; margin-left: 32px;" type="text" id="pmPingURL" name="pmPingURL"></p><br />' +
-        '<p><input style="width: 40px;" type="checkbox" id="pmMute" name="pmMute">Mute PMs</p><br />' +
+        '<div class="rpht-block"><label>PM Sound:   </label><input style="width: 300px;" type="text" id="pmPingURL" name="pmPingURL"></div><br />' +
+        '<div class="rpht-block"><label>Mute PMs:   </label><input type="checkbox" id="pmMute" name="pmMute"></div><br />' +
         '<p style="border-bottom: 2px solid #EEE;">' +
           '<span style="background: #333; position: relative; top: 0.7em;"><strong>PM Away System</strong>&nbsp; </span>' +
         '</p><br />' +
         '<p>Username</p>' +
         '<select style="width: 403px;" id="pmNamesDroplist" size="5"></select><br><br>' +
-        '<p>Away Message: <input style="margin-left: 14px; width: 300px;" type="text" id="awayMessageTextbox" name="awayMessageTextbox" maxlength="300" placeholder="Away message..."></p>' +
-        '<br>' +
-        '<p style="margin-left: 285px;"><button type="button" id="setAwayButton">Enable</button> <button type="button" id="removeAwayButton">Disable</button></p>' +
+        '<div class="rpht-block"><label>Away Message: </label><input style="width: 300px;" type="text" id="awayMessageTextbox" name="awayMessageTextbox" maxlength="300" placeholder="Away message..."></div>' +
+        '<div class="rpht-block"><button type="button" id="setAwayButton">Enable</button> <button type="button" id="removeAwayButton">Disable</button></div>' +
         '<p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">' +
           '<strong>Extra Options</strong>&nbsp;' +
         '</span></p> <br />' +
-        '<input style="width: 40px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable" checked>No room links' +
-        '<input style="width: 40px;" type="checkbox" id="imgIconDisable" name="imgIconDisable">No image icons (in chat)<br>' +
-        '<input style="width: 40px;" type="checkbox" id="showUsername" name="showUsername">Show username in tabs & textbox (requires rejoin)' +
-        '<br /><br />' +
-        '<p>Chat history: <input style="margin-left: 27px; width: 300px;" type="text" id="chatHistory" name="chatHistory" value="300"><br /><br /></p>' +
+        '<div class="rpht-block"><label>Chat history: </label><input style="width: 300px;" type="number" id="chatHistory" name="chatHistory" max="65535" min="10" value="300"><br /><br /></div>' +
+        '<div class="rpht-block"><label>No image icons in PM</label><input style="margin-right: 10px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable"></div>' +
+        '<div class="rpht-block"><label>No image icons in chat</label><input style="margin-right: 10px;" type="checkbox" id="imgIconDisable" name="imgIconDisable"></div>' +
+        '<div class="rpht-block"><label>Show username in tabs & textbox (requires rejoin)</label><input style="margin-right: 10px;" type="checkbox" id="showUsername" name="showUsername"></div>' +
       '</div>' +
       '<br />' +
      '<h3 class="rpht_headers" id="diceHeader">Random Number Generators</h3>' +
@@ -149,29 +140,28 @@ var html =
           '<span style="background: #333; position: relative; top: 0.7em;"><strong>Options</strong>&nbsp;</span>' +
         '</p> <br />' +
         '<div id="diceOptions">' +
-          '<p>Number of die  <input style="width: 300px; margin-left: 20px;" type="number" id="diceNum" name="diceNum" max="10" min="1" value="2"></p>' +
-          '<p>Sides <input style="width: 300px; margin-left: 69px;" type="number" id="diceSides" name="diceSides" max="100" min="2" value="6"></p><br />' +
-          '<input style="width: 40px;" type="checkbox" id="showRollTotals" name="showRollTotals">Show totals <br />' +
+          '<div class="rpht-block"><label>Number of die </label><input style="width: 300px;" type="number" id="diceNum" name="diceNum" max="10" min="1" value="2"></div>'+
+          '<div class="rpht-block"><label>Sides </label><input style="width: 300px;" type="number" id="diceSides" name="diceSides" max="100" min="2" value="6"></div>'+
+          '<div class="rpht-block"><label>Show Totals:</label><input type="checkbox" id="showRollTotals" name="showRollTotals"></div>' +
         '</div>' +
         '<div id="rngOptions" style="display: none;">' +
-          '<p>Minimum: <input style="width: 300px; margin-left: 43px;" type="number" id="rngMinNumber" name="rngMinNumber" max="4294967295" min="-4294967296" value="0"></p>' +
-          '<p>Maximum: <input style="width: 300px; margin-left: 39px;" type="number" id="rngMaxNumber" name="rngMaxNumber" max="4294967295" min="-4294967296" value="10"></p>' +
+          '<div class="rpht-block"><label>Minimum: </label><input style="width: 300px;" type="number" id="rngMinNumber" name="rngMinNumber" max="4294967295" min="-4294967296" value="0"></div>' +
+          '<div class="rpht-block"><label>Maximum: </label><input style="width: 300px;" type="number" id="rngMaxNumber" name="rngMaxNumber" max="4294967295" min="-4294967296" value="10"></div>' +
         '</div>' +
-        '<button type="button" id="rngButton">Let\'s roll!</button>' +
+        '<div class="rpht-block"><button type="button" id="rngButton">Let\'s roll!</button></div>' +
       '</div>' +
       '<br />' +
       '<h3 class="rpht_headers" id="blockHeader">Blocking</h3>' +
       '<div id="blockForm" style="display:none;">' +
         '<p style="border-bottom: 2px solid #EEE;">' +
           '<span style="background: #333; position: relative; top: 0.7em;"><strong>Block</strong>&nbsp;</span>' +
-        '</p> <br />' +
-        '<p>User: <input style="width: 400px; margin-left: 69px;" type="text" id="nameCheckTextbox" name="nameCheckTextbox" placeholder="User to block"></p>' +
-        '<button style="margin-left: 357px;" type="button" id="blockButton">Block</button><br>' +
+        '</p>' +
+        '<div class="rpht-block"><label>User:</label><input style="width: 400px;" type="text" id="nameCheckTextbox" name="nameCheckTextbox" placeholder="User to block"></div>' +
+        '<div class="rpht-block"><button style="margin-left: 357px;" type="button" id="blockButton">Block</button></div></ br>' +
         '<br />' +
         '<p>Blocked users</p>' +
         '<select style="width: 100%;" size="5" id="blockedDropList"></select>' +
-        '<br />' +
-        '<button style="margin-left: 341px;" type="button" id="unblockButton">Unblock</button>' +
+        '<div class="rpht-block"><button style="margin-left: 341px;" type="button" id="unblockButton">Unblock</button></div>' +
       '</div>' +
       '<br />' +
       '<h3 class="rpht_headers" id="moddingHeader">Modding</h3>' +
@@ -181,39 +171,21 @@ var html =
         '</p><br />' +
         '<p>This will only work if you\'re actually a mod and you own the user name.</p>' +
         '<br />' +
-        '<p>Room-Name pair <select style="width: 300px; margin-left: 4px;" id="roomModSelect"></p>' +
-        '<option value=""></option>' +
-        '</select><br /><br />' +
-        '<p>Room:  <input style="width: 300px; margin-left: 61px;" type="text" id="modRoomTextInput" placeholder="Room"></p>' +
-        '<br /><br />' +
-        '<p>Mod name: <input style="width: 300px; margin-left: 35px;" type="text" id="modFromTextInput" placeholder="Your mod name"></p>' +
-        '<br />' +
-        '<p>Message: <input style="width: 300px; margin-left: 45px;" type="text" id="modMessageTextInput" placeholder="Message"></p>' +
-        '<br />' +
+        '<div class="rpht-block"><label>Room-Name pair</label> <select style="width: 300px;" id="roomModSelect">' +
+          '<option value=""></option>' +
+        '</select></div>' +
+        '<div class="rpht-block"><label>Room:</label><input style="width: 300px;" type="text" id="modRoomTextInput" placeholder="Room"></div>' +
+        '<div class="rpht-block"><label>Mod name:</label><input style="width: 300px;" type="text" id="modFromTextInput" placeholder="Your mod name"></div>' +
+        '<div class="rpht-block"><label>Message:</label><input style="width: 300px;" type="text" id="modMessageTextInput" placeholder="Message"></div>' +
+        '<br/><br/>' +
         '<p>Perform action on these users (semicolon separated with no space between): </p>' +
         '<textarea name="modTargetTextInput" id="modTargetTextInput" class="rpht_textarea"></textarea>' +
         '<br />' +
-        '<button type="button" id="kickButton">Kick</button>' +
+        '<div class="rpht-block"><button type="button" id="kickButton">Kick</button>' +
         '<button style="margin-left: 30px;" type="button" id="banButton">Ban</button>' +
         '<button type="button" id="unbanButton">Unban</button>' +
         '<button style="margin-left: 30px;"type="button" id="modButton">Mod</button>' +
-        '<button type="button" id="unmodButton">Unmod</button>' +
-        '<br /><br />' +
-        '<p style="border-bottom: 2px solid #EEE;">' +
-          '<span style="background: #333; position: relative; top: 0.7em;"><strong>Flood Detection</strong>&nbsp;</span>' +
-        '</p><br />' +
-        '<input style="width: 40px;" type="checkbox" id="floodDetectEnable" name="floodDetectEnable">Enable flood detection' +
-        '<input style="width: 40px;" type="checkbox" id="floodDetectBan" name="floodDetectBan">Ban instead of kick' +
-        '<br /><br />' +
-        '<p>Message: <input style="width: 300px; margin-left: 45px;" type="text" id="floodDetectMsg" placeholder="Message"></p>' +
-        '<br />' +
-        '<p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">' +
-          '<strong>Clone Detection</strong>&nbsp;' +
-        '</span></p><br />' +
-        '<input style="width: 40px;" type="checkbox" id="cloneDetectEnable" name="cloneDetectEnable">Enable clone detection' +
-        '<input style="width: 40px;" type="checkbox" id="cloneDetectBan" name="cloneDetectBan" checked>Ban instead of kick' +
-        '<br /><br />' +
-        '<p>Message: <input style="width: 300px; margin-left: 45px;" type="text" id="cloneDetectMsg" placeholder="Message"></p><br><br>' +
+        '<button type="button" id="unmodButton">Unmod</button></div>' +
       '</div>' +
       '<br />' +
       '<h3 class="rpht_headers" id="importExportHeader">Import/Export Settings</h3>' +
@@ -221,10 +193,10 @@ var html =
         '<br />' +
         '<p>Press "Export" to export savable settings. To import settings, past them into the text box and press "Import".</p><br />' +
         '<textarea name="importExportText" id="importExportTextarea" class="rpht_textarea" ></textarea>' +
-        '<br />' +
-        '<button type="button" id="exportButton">Export</button>' +
-        '<button style="margin-left: 298px;" type="button" id="importButton">Import</button>' +
-        '<br>' +
+        '<div class="rpht-block">' +
+          '<button style="float: left;" type="button" id="exportButton">Export</button>' +
+          '<button style="float: right;"type="button" id="importButton">Import</button>' +
+        '</div> <br /><br/>' +
       '</div>' +
       '<br />' +
       '<h3 class="rpht_headers" id="aboutHelpHeader">About/Help</h3>' +
@@ -232,7 +204,7 @@ var html =
         '<br><p>Click on the "More Settings" button again to save your settings!</p>' +
         '<p>You may need to refresh the chat for the settings to take effect.</p>' +
         '<br><p><a href="http://www.rphaven.com/topics.php?id=1#topic=1883&page=1" target="_blank">Report a problem</a> |' +
-        '<a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 2.1.5</p><br>' +
+        '<a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 2.2.0</p><br>' +
         '<p><button type="button" id="settingsButton">Print settings</button> (open console to see settings)</p>' +
         '<br>' +
       '</div>' +
@@ -255,26 +227,13 @@ $(function() {
   tempSettings = 8;
 
   _on('accounts', function() {
-    if (accountFound === false) {
-      var users = account.users;
-      clearUsersDropLists();
-      for(i = 0; i < users.length; i++) {
-        addUserToDroplist(users[i]);
-      }
+    var users = account.users;
+    clearUsersDropLists();
+    for(i = 0; i < users.length; i++) {
+      addUserToDroplist(users[i]);
     }
+    console.log('RPH Tools[_on.accounts]: Account data blob received, adding users', users);
   });
-
-  chatSocket.on('room-users', function(data) {
-		var Room = getRoom(data.room);
-		_.each(data.users, function(userid) {
-      getUserById(userid, function(User) {
-        if ((tempSettings & 4) > 0) {
-          console.log('RPH Tools[_on.room-users]: Checking for clones');
-          checkForClones(User, Room);
-        }
-      });
-		});
-	});
 
   _on('ignores', function(data) {
     console.log("RPH Tools[_on.ignores]: Blocking user from ignore button", data.ids[0]);
@@ -314,7 +273,7 @@ function initRphTools(){
 
     if (localStorage.getItem("blockedUsers") !== null) {
       var temp_blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
-      console.log("[initRphTools]: Loaded blocked users: ", temp_blockedUsers);
+      console.log("RPH Tools[initRphTools]: Loaded blocked users: ", temp_blockedUsers);
 
       for (var i = 0; i < temp_blockedUsers.length; i++) {
         console.log("RPH Tools[initRphTools]: Blocking user ", temp_blockedUsers[i]);
@@ -331,7 +290,7 @@ function initRphTools(){
 
   setTimeout(reblockList, 60*1000);
   setupPMFunctions();
-  console.log('[initRphTools]: Init complete, setting up dialog box');
+  console.log('RPH Tools[initRphTools]: Init complete, setting up dialog box');
   SetUpToolsDialog();
 }
 
@@ -980,24 +939,6 @@ function ModdingSetup() {
   $('#unmodButton').click(function() {
     modAction('remove-mod');
   });
-
-  $('#floodDetectEnable').change(function() {
-    tempSettings ^= 1;
-  });
-  $('#floodDetectBan').change(function() {
-    tempSettings ^= 2;
-  });
-
-  $('#cloneDetectEnable').change(function() {
-    tempSettings ^= 4;
-  });
-  $('#cloneDetectBan').change(function() {
-    tempSettings ^= 8;
-  });
-
-  $('#textFilterEnable').change(function() {
-    tempSettings ^= 16;
-  });
 }
 
 /****************************************************************************
@@ -1058,37 +999,6 @@ function emitModAction(action, targetName) {
     }
     console.log('RPH Tools[emitModAction]:', modMessage);
   });
-}
-
-/****************************************************************************
- * @brief:    Checks is a username has already entered the room.
- * @param:    User - User that entered the room
- * @param:    Room - Room to check
- ****************************************************************************/
-function checkForClones(User, Room) {
-  var cloneCount = 0;
-  for(var i = 0; i < Room.users.length; i++) {
-    if (User.props.id === Room.users[i]) {
-      cloneCount ++;
-    }
-  }
-
-  if (cloneCount >= 5) {
-    if (roomTracking[Room.props.name] !== undefined) {
-      var kickMsg = $('#cloneDetectMsg')[0].value;
-      var action = "kick";
-
-      if ((tempSettings & 8) > 0) {
-        action = "ban";
-      }
-      chatSocket.emit(action,
-        {room:Room.props.name,
-        userid:roomTracking[Room.props.name]['!mod'],
-        targetid:User.props.id, msg:kickMsg});
-      console.log("RPH Tools[checkForClones]: Kicking cloner ", User.props.name,
-                  "from room", Room.props.name);
-    }
-  }
 }
 
 /****************************************************************************
@@ -1219,9 +1129,8 @@ function setupPMFunctions() {
  ****************************************************************************/
  /****************************************************************************
  * @brief:    When user joins a room, do the following:
- *            - Set up the .onMessage function for flood detection and pinging
+ *            - Set up the .onMessage function for pinging
  *            - Add the user's name to the chat tab and textarea
- *            - Set up room tracking for initing flood detection
  *            - Create a room-pair name for the Modding section
  * @param:    room - Room that the user has joined
  ****************************************************************************/
@@ -1272,59 +1181,6 @@ function postMessage(thisRoom, data) {
         for(i = 0; i < linkMatches.length; i++) {
           var prunedMsg = msg.match(new RegExp('>(.*?)<', ''))[1];
           msg = msg.replace(linkMatches[i], prunedMsg);
-        }
-      }
-    }
-
-    /* Detect flooding. Evil multi-nested variable checking. */
-    if ( (tempSettings & 0x01) > 0 &&                           /* 1. Is this setting even enabled?*/
-          classes.indexOf("mod") === -1 &&                      /* 2. Is the name not a mod? */
-          classes.indexOf("owner") === -1  &&                   /* 3. Is the name not an owner? */
-          roomTracking[thisRoom.props.name] !== undefined &&    /* 4. Has a tracker been created? */
-         (Date.now()/1000 - data.time) < 60                     /* 5. Is the message within a minute of now? */
-      ) {
-      if (roomTracking[thisRoom.props.name][User.props.id] === undefined) {
-        var entry = {
-          "rate"      : 0,
-          "start_time": data.time,
-          "last_time" : data.time
-        };
-        roomTracking[thisRoom.props.name][User.props.id] = entry;
-        console.log("RPH Tools[postMessage]: Adding user to room tracking, ", User.props.name, roomTracking[thisRoom.props.name][User.props.id]);
-      }
-      else{
-        var floodDetected = false;
-        var timeDiff = data.time - roomTracking[thisRoom.props.name][User.props.id].last_time;
-        roomTracking[thisRoom.props.name][User.props.id].last_time = data.time;
-
-        if (timeDiff <= 1) {
-          roomTracking[thisRoom.props.name][User.props.id].rate += 1;
-        }
-        else if (timeDiff > 1) {
-          if (roomTracking[thisRoom.props.name][User.props.id].rate > 0) {
-            roomTracking[thisRoom.props.name][User.props.id].rate -= 1;
-          }
-        }
-
-        if ((data.time - roomTracking[thisRoom.props.name][User.props.id].start_time) > 5) {
-          roomTracking[thisRoom.props.name][User.props.id].start_time = data.time;
-          roomTracking[thisRoom.props.name][User.props.id].rate = 0;
-        }
-
-        if (roomTracking[thisRoom.props.name][User.props.id].rate >= 4) {
-          floodDetected = true;
-          console.log('RPH Tools[postMessage]: Detected', User.props.name, 'flooded.');
-        }
-
-        if (floodDetected === true) {
-          var kickMsg = $('#floodDetectMsg')[0].value;
-          var action = "kick";
-
-          if ((tempSettings & 2) > 0) {
-            action = "ban";
-          }
-          chatSocket.emit(action, {room:thisRoom.props.name, userid:roomTracking[thisRoom.props.name]['!mod'], targetid:User.props.id, msg:kickMsg});
-          floodDetected = false;
         }
       }
     }
@@ -1537,10 +1393,6 @@ function addModFeatures(thisRoom, userId) {
         'modId': userId
       };
 
-      roomTracking[thisRoom.props.name] = {};
-      roomTracking[thisRoom.props.name]['!mod'] = userId;
-      console.log("RPH Tools[addModFeatures]: Tracking room", roomTracking);
-
       if (roomNamePairs[roomNameValue] === undefined) {
         roomNamePairs[roomNameValue] = roomNameObj;
         $('#roomModSelect').append('<option value="' + roomNameValue + '">' + roomNamePair + '</option>');
@@ -1643,7 +1495,7 @@ function addModFeatures(thisRoom, userId) {
    $('#pmNamesDroplist').empty();
    $('#userColorDroplist').empty();
  }
- 
+
 /****************************************************************************
  * @brief:    Marks if there's a problem or not.
  * @param:    element - element ID that has the problem

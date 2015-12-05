@@ -10,17 +10,16 @@ experience.
 1. You must have (one or the other)
   - [Firefox](http://www.getfirefox.com) with the [Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/) extension installed
   - [Google Chrome](https://www.google.com/chrome/) or [Chromium](http://www.chromium.org/Home) with the [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en) extension installed.
-2. **For Google Chrome users:** Google Chrome by default does not allow installation of custom user scripts unless you either bypass it or they're on the Chrome store. To bypass this, follow [these instructions](http://techsupportguides.com/install-userscripts-in-chrome/) (that's a link).
-3. If you have a previous version, you should remove it.
-4. Then...
-  - Click on the "Install" button on top to add the script or...
+  - [Opera](http://www.opera.com) with either the [TamperMonkey](https://addons.opera.com/en/extensions/details/tampermonkey-beta/?display=en) or [Violent monkey](https://addons.opera.com/en/extensions/details/violent-monkey/?display=en) extension installed.
+2. Install using one of these two methods:
+  - Go to the [Openuser JS site](https://openuserjs.org/scripts/shuffyiosys/RPH_Tools) and click on the "Install" button on top to add the script.
   - Click on the "Source Code" tab and copy the source code, then...
     - In Greasemonkey, select "Add new script", enter some information then press OK, then paste the code in there. Make sure to save it and enable it.
     - In Tampermonkey, select "Add a new script", then paste the code in there. Press the save icon and enable it.
 5. Refresh RPH if you're on it already for the script to take effect.
 
 ##To update
-Just press the "install" button. This will overwrite the version you currently have.
+Go to the [Openuser JS site](https://openuserjs.org/scripts/shuffyiosys/RPH_Tools) and click on the "Install" button on top to update the script. This will overwrite the version you currently have.
 
 ***
 #Features
@@ -37,41 +36,45 @@ RPH Tools is a user script that adds additional features into RPH. These feature
 - Custom pinging options. This allows a user to be given a visual and audio "ping" when someone types up a keyword.
   - Highlights will mark the keyword and the chat where the ping happened.
   - Audio pings can be customized to any audio you wish! .mp3, .ogg, or .wav is supported only.
+- Custom PM audio sounds and a mute button to force mute.
 - PM away message system for each user's name.
-- Room links (where posting the name of the room creates a link to it) can be enabled or disabled
-- Chat icons (where posting a link to a small enough image shows the image instead of the link) can be enabled or disabled.
-- Your user name will appear below each room tab's room name.
+- ~~Room links (where posting the name of the room creates a link to it) can be enabled or disabled~~
+  - RPH has disabled room links entirely, but this option is still around as it has a side effect of removing image icons in PMs.
+- Image icons in chat can be enabled or disabled.
+- Show the user name in the chat tab and text box for easy alt handling.
+- Edit the number of lines in chat the browser will remember.
 
 ### Random number generators
-- Flip a coin!
-- Roll 1-10 dice with 2-100 sides!
-- Generate a number between -2^32-1 and 2^32-1 (they're big numbers).
+- Coin flipping
+- Roll 1-10 dice with 2-100 sides.
+- Generate a number between -4294967295 and 4294967295.
 
-### Friends list/Blocking
+### Blocking
 - Force block users. This will apply a block flag to users of your choosing.
   - This only works in the chat.rphaven.com URL proper. Being outside of this URL will not apply this.
 
-### Mod Tools
-- Mods and owners can perform kicks, bans, and mod promotions to a room they own, all without both parties being in the room!
+### Modding
+- Helps owners and mods moderate their rooms with more explicit input.
+- You can also moderate a room even if you're not in it.
 
 ***
 #How to Use
 **Note** Saved settings are automatically retrieved and populated.
 
-1. After installing and opening up RPH, "More Settings" should appear in the top right corner.
-2. Click on "More Settings" to open up the main window.
-3. Click on the tab setting/feature you want to change or use.
-4. When you're done, click on "More Settings" to close the window and save settings.
+1. Click on "Settings" to open up the main window.
+  - Note: If this does not show "RPH Tools" on the top, the script is not working properly.
+2. Click on the tab setting/feature you want to change or use.
+3. When you're done, click on "More Settings" to close the window and save settings.
 
 ### Chat Room and PM Settings
-1. User name text color:
+- User name text color:
   - Enter a user name and color (6 or 3 digit hex code) to set the color for that user name.
   - Colors are limited per channel to D2 for 6 character codes and D for 3 character codes.
     - For example, #D2D2D3 is not valid and neither is #00E.
-2. Setting up pings:
+- Setting up pings:
   - **For ping names and URL**, do not use the pipe ( | ), this is used for separating entries when saving settings.
   - Enter all the names or words you want to be pinged by. Separate each entry with a comma, but leave no spaces.
-    - e.g., Do "Alice,Bob" instead of "Alice, Bob"
+    - e.g., Do "Alice,Bob" instead of "Alice, Bob"d
   - Enter the URL of the sound file to play when a ping is matched. It must be a WAV, MP3, or OGG file.
   - If you need a place to upload a sound clip:
     - Go to [Clyp.it](http://clyp.it) and upload your sound
@@ -85,16 +88,20 @@ RPH Tools is a user script that adds additional features into RPH. These feature
     - e.g., if using "Mel" with this checked, it will not ping on "mel".
   - You can check if the ping is to your liking by putting one of the words on the list into the chat (it will not ping that word/name if it's been previously posted). To save your settings, you must press the "More Settings" button again.
   - If a setting is invalid, it will mark the field red and the window will not close or save settings until it's fixed.
-3. PM Away Messages (away messages are not persistent, they will disappear if you refresh the chat):
+- PM Away Messages (away messages are not persistent, they will disappear if you refresh the chat):
   - Select a user name you want to be "away"
   - Type in a message to send to anyone who PMs that name.
   - Press "Enable" to set that name as away. "[Away]" will be prepended to that name to indicate so.
   - To disable away messages, select the name from the list and press "Disable".
   - If you PM someone with a name that is away, that name will no longer be away.
-3. If you want to turn off room linking, check the "No Room Links" check box.
-4. If you want to turn off image icons in chat, check the "No image icons" check box.
+- If you want to turn off image icons in PMs, check the "No image icons in PMs" check box.
+- If you want to turn off image icons in chat, check the "No image icons in chat" check box.
+- If you want the username to show up in the chat text input box and the chat tab, check the "Show username in tabs & textbox" check box
+- To adjust the number of lines the browser will show per chatroom, enter a number in "Chat history"
 
 ### Random Number Generators
+1. Check which type of RNG you want.
+
 **Coin toss**
 1. Press "Flip coin!" to flip a coin.
 
@@ -108,18 +115,18 @@ RPH Tools is a user script that adds additional features into RPH. These feature
 2. Enter a maximum number. The results will exclude this number.
 3. Press "Randomize!" to get a number.
 
-### Friends List/Blocking
+### Blocking
 1. Enter the user you want to block in the text box and press Enter.
 2. If the name does not come up, the box will be highlighted red, otherwise the name will appear in the drop down menu below.
 3. To unblock, select the name from the drop down menu and press the "Unblock" button.
 4. This list is auto-populated when the chat loads. If for some reason the user name no longer exists or is unreachable, the script will not block that name and you will have to re-block the name if it comes back.
 
-### Mod Tools
-1. Enter the room where the action will be performed.
-2. Enter your user name of the room that has mod rights
-3. Enter the user name of the person whom will receive this action.
-4. Enter a message that will be displayed
-5. Press one of the buttons to perform the action.
+### Modding
+1. Enter your user name of the room that has mod rights
+2. Enter a message that will be displayed
+3. Enter the user names that the action will be performed. Separate each name with a semicolon without spaces.
+  - For example, do "User1;User2;User3", **not** "User1; User2; User3".
+4. Press one of the buttons to perform the action.
 
 ### Import/Export
 1. Press the "Export" button, this will populate the textbox with settings are saved.
@@ -128,6 +135,10 @@ RPH Tools is a user script that adds additional features into RPH. These feature
 ***
 # Troubleshooting
 - Make sure you are using **one version** of this script. If you installed the other versions, they probably won't play nice with each other.
+- RPH Tools has Javascript console logging at various places where a problem is more likely to happen. To open up the console:
+  - Firefox: Ctrl + Shift + K if on Windows, or Cmd + Opt + K if on Mac OS
+  - Chrome: Ctrl + Shift + J if on Windows, or Cmd + Opt + J if on Mac OS
+  - Opera: Press CTRL + SHIFT + I to open Dragonfly. Click on the “console” tab.
 - Refresh the page after installing. If you are on RPH and you install this script, then this is a must.
 - Delete cookies related to pings
   - Go into your browser's options and search for RPH's cookies. You can either delete them all (which will just make it forget you were logged in) or find the cookies prepended with rphTools_.
@@ -145,7 +156,7 @@ RPH Tools is a user script that adds additional features into RPH. These feature
 #Limitations
 - If you are running RPH on multiple tabs/windows, most settings will not propagate across all open instances.
 - Greasemonkey/Tampermonkey has no access to local files for security reasons. Therefore, any audio you use for pings must be online somewhere.
-- Do not use the pipe ( | ) in the text fields, I use that as the delimiter for cookie saving.
+- Do not use the pipe ( | ) or semicolon ( ; ) in text fields that allow multiple, separated entries.
 
 ***
 #License/Disclaimer
@@ -159,7 +170,49 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ***
 #Version History
-Entries with ( ) around them either did not fix the problem stated, or caused other issues which were fixed elsewhere.
+2.2.0 - 12/05/2015
+- All console prints use "RPH Tools [<function>]:"
+- Removed flood and clone detection, as RPH addressed these.
+- Redid the HTML such that it's now uniform and lines up properly.
+- Changed "No room links" to "No image icons in PM", as room link removal was done in RPH and this had a side effect of removing image icons in PM too. However, the internal name is still kept for compatibility purposes.
+
+2.1.4 - 12/03/2015
+- Fixed an issue where RPH would block "undefined" at the start of the chat if the user's block list was empty, which would cause RPH Tools to save an empty block list.
+  - RPH Tools checks if RPH is trying to block "undefined"
+  - RPH Tools copies what's saved in the block list immediately into the main list and issues a block using UserChangeIgnore instead of blockUserById.s
+  - RPH Tools blocks the entire list after a minute of launching or if the user opens up the dialog to force blocking.
+- RPH Tools ignores RPH's unblock event to prevent the client from randomly unblocking (if possible)
+
+2.1.2 - 11/16/2015
+- Added the ability to use a custom sound for PM notifications.
+- Added a mute option for PM sounds.
+
+2.1.0 - 06/26/2015
+ - Added an option to show dice roll totals.
+
+2.0.3 - 05/24/2015
+- Showing your character name in the tab and text box is switchable.
+
+2.0.2 - 05/07/2015
+- Fixed how room links are removed from PMs. This won't muck with regular links anymore. It also has a side effect of removing image icons from PMs.
+
+2.0.1 - 03/14/2015
+- ~~Added cloning detection~~
+- ~~Fixed how RPH Tools handles the account data blob to prevent it from populating dropdown lists in the event the PM system restarts~~
+- Fixed an issue where if you input an invalid text color, the red highlight doesn't go away. It does now when the color is valid.
+- Added a "Print settings" button in "About/Help". This will dump the settings of RPH Tools into the console.
+- Removed loading settings from cookies.
+
+2.0.0 - 02/25/2015
+- Refactored the layout of the HTML to remove execessive help text.
+- Changed the RNG layout to use radio style selection.
+- Added a room-name pair list in Modding to make it easier to fill out which mod and room to perform the action. The user must enter the room first as a mod for the list to populate.
+
+1.4.1 - 02/21/2015
+- ~~Fine tuned flood detection.~~
+
+1.4.0 - 02/21/2015
+- ~~Added flood detection~~
 
 1.3.0 - 02/17/2015
 - RPH Tools now takes over the official "Settings" link (until it gets used for something useful again)
@@ -202,7 +255,7 @@ Entries with ( ) around them either did not fix the problem stated, or caused ot
 - Changed <form> tags in the HTML to <div> tags. This causes textboxes to invoke a submit action if enter is pressed.
 - Uses local WebStorage now instead of cookies. Cookies will still be loaded if available and as a fallback.
 - Removed PM text colors as they weren't working as intended.
-- [DEPCRATED]Fixed a bug with blocking. Originally the script didn't touch the cookie that was saved and there wasn't a way to scrub names that no longer would respond to the getUserById. The script now saves every time you block someone to refresh the list. This could be a problem because if you block enough people whose names no longer respond, you could fill up the cookie and it will no longer save blocked people. However, in this version if you've blocked someone with a name that has disappeared and it reappears, you will have to reblock them.
+- ~~Fixed a bug with blocking. Originally the script didn't touch the cookie that was saved and there wasn't a way to scrub names that no longer would respond to the getUserById. The script now saves every time you block someone to refresh the list. This could be a problem because if you block enough people whose names no longer respond, you could fill up the cookie and it will no longer save blocked people. However, in this version if you've blocked someone with a name that has disappeared and it reappears, you will have to reblock them.~~
 
   This is no longer an issue with WebStorage, however, unresponsive names will still be pruned to avoid memory leaks.
 - Added per-username PM away messages. To use, select a name, set an away message, and press "Enable" or "Disable". Names that are away will be highlighted in the list and will auto-reply when someone PMs them.
@@ -224,7 +277,7 @@ Entries with ( ) around them either did not fix the problem stated, or caused ot
 0.1.2 - 12/17/2014
 - Limited text colors so bright colors are not available.
 - Extended room link sanitizing on PMs to outgoing PMs.
-- [DEPRECATED] Added the option to include your text color in PMs. This only affects the client side end, so if you enable it but the recipient doesn't, the recipient doesn't see the colors, only you.
+- ~~Added the option to include your text color in PMs. This only affects the client side end, so if you enable it but the recipient doesn't, the recipient doesn't see the colors, only you.~~
 - For license reasons I reverted the room link sanitizing on the chat room end to what I originally did. Functionally it's the same.
 
 0.1.1 - 12/15/2014
