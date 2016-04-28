@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    2.2.0
+// @version    2.3.2a
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
@@ -11,6 +11,22 @@
 /*jshint multistr: true */
 /*jshint bitwise: false*/
 /*global $:false */
+
+var RPHT_AUTO_JOIN = 1;
+var RPHT_PING_BOLD = 2;
+var RPHT_PING_ITALICS = 4;
+var RPHT_PING_EXACT_MATCH = 8;
+var RPHT_PING_CASE_SENSE = 16;
+var RPHT_NO_PM_ICONS = 32;
+var RPHT_SHOW_NAMES = 64;
+var RPHT_NO_ROOM_ICONS = 128;
+var RPHT_CLEANUP_RECONNECT = 256;
+var RPHT_DIE_MIN = 1;
+var RPHT_DIE_MAX = 10;
+var RPHT_DIE_SIDE_MIN = 2;
+var RPHT_DIE_SIDE_MAX = 100;
+var RPHT_RNG_NUM_MIN = -4294967296;
+var RPHT_RNG_NUM_MAX = 4294967296;
 
 /*****************************************************************************
  * Variables for persistent storage
@@ -38,38 +54,29 @@ var scriptSettings = {
   "color"     : "#000",
   "highlight" : "#FFA",
   "flags"     : 0,
-  "pmPingUrl" : "http://chat.rphaven.com/sounds/imsound.mp3"};
+  "pmPingUrl" : "http://chat.rphaven.com/sounds/imsound.mp3",
+  "favRooms"  : [],
+};
 
 var blockedUsers = [];
 
-/*****************************************************************************
-* Variables for session storage
-/****************************************************************************/
-
 /* Object for dialog box */
-var settingsTool = {state: false};
-var pingTool = {state: false};
-var diceTool = {state: false};
-var blockTool = {state: false};
-var modTool = {state: false};
-var importExport = {state: false};
-var aboutHelpTool = {state: false};
+var settingsDialog = {};
 
 var validSettings = true;
 
-/* Object to hold the audio. */
-var snd = null;
+var settingsChanged = false;
 
-/*****************************************************************************
-  Stores away messages. Indices are by character ID.
-/****************************************************************************/
+var pingSound = null;
+
 var awayMessages = {};
-
-var tempSettings = 0;
 
 var roomNamePairs = {};
 
-// HTML code to be injected into the chat.
+var autoJoinTimer = null;
+
+var versString = 'RPH Tools 2.3.2a';
+
 var html =
   '<style>' +
     '.rpht_headers{cursor: pointer; padding-left: 5px; background: #43698D; width: 99%; border-radius: 3px; color:#FFF;}' +
@@ -81,8 +88,9 @@ var html =
   '<div id="settingsBox" style="display: none; position: absolute; top: 35px; z-index: 9999999; height: 500px; width: 450px; border-radius: 10px; box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.7); right: 85px; background: url(&quot;http://www.rphaven.com/css/img/aero-bg.png&quot;) repeat scroll 0px 0px transparent; padding: 5px;" left="">' +
     '<h3 style="text-align: center; color:#000;">RPH Tools</h3>' +
     '<div id="settingsContainer" style="height: 470px; width: 100%; overflow: auto; background: rgb(51, 51, 51); padding: 10px; border-radius: 5px; font-size: 0.8em;">' +
-      '<h3 class="rpht_headers" id="pingHeader">Chat room and PM options</h3>' +
-      '<div id="ping_form" style="display:none;">' +
+      '<h3 class="rpht_headers" id="chatSettingsHeader">Chat room</h3>' +
+      /* Chat Settings */
+      '<div id="chatSettingsForm" style="display:none;">' +
         '<p style="border-bottom: 2px solid #EEE;">' +
           '<span style="background: #333; position: relative; top: 0.7em;"><strong>User text color</strong>&nbsp;</span>' +
         '</p>' +
@@ -90,7 +98,7 @@ var html =
         '<div class="rpht-block"><label>Text color:</label><input style="width: 300px;" type="text" id="userNameTextColor" name="userNameTextColor" value="#111"></div>' +
         '<div class="rpht-block"><button type="button" id="userNameTextColorButton">Set color</button></div>' +
         '<p style="border-bottom: 2px solid #EEE;">' +
-          '<span style="background: #333; position: relative; top: 0.7em;"><strong>Ping Options</strong>&nbsp;</span>' +
+          '<span style="background: #333; position: relative; top: 0.7em;"><strong>Pings</strong>&nbsp;</span>' +
         '</p><br />' +
         '<p>Names to be pinged (comma separated)</p>' +
         '<textarea id="pingNames" class="rpht_textarea" name="pingNames"> </textarea>' +
@@ -104,12 +112,31 @@ var html =
         '<input style="width: 40px;" type="checkbox" id="pingItalicsEnable" name="pingItalicsEnable"><em>Italics</em>' +
         '<input style="width: 40px;" type="checkbox" id="pingExactMatch" name="pingExactMatch">Exact match' +
         '<input style="width: 40px;" type="checkbox" id="pingCaseSense" name="pingCaseSense">Case sensitive' +
+        '<br /><br />' +
+        '<p style="border-bottom: 2px solid #EEE;">' +
+          '<span style="background: #333; position: relative; top: 0.7em;"><strong>Auto Join Favorite Rooms</strong>&nbsp; </span>' +
+        '</p>' +
+        '<div class="rpht-block"><label>Enable Auto Join:   </label><input type="checkbox" id="favEnable" name="favEnable"></div>' +
+        '<div class="rpht-block"><label>Username: </label><select style="width: 300px;" id="favUserList"></select></div>'+
+        '<div class="rpht-block"><label>Room:     </label><input style="width: 370px;" type="text" id="favRoom" name="favRoom"></div>' +
+        '<div class="rpht-block"><label>Password: </label><input style="width: 370px;" type="text" id="favRoomPw" name="favRoomPw"></div>' +
+        '<div class="rpht-block"><button type="button" id="favAdd">Add</button></div>'+
+        '<p>Favorite rooms</p>' +
+        '<select style="width: 403px;" id="favRoomsList" size="5"></select><br><br>' +
+        '<div class="rpht-block"><button type="button" id="favRemove">Remove</button></div>'+
         '<br>' +
         '<p style="border-bottom: 2px solid #EEE;">' +
-          '<span style="background: #333; position: relative; top: 0.7em;"><strong>PM Options</strong>&nbsp; </span>' +
+          '<span style="background: #333; position: relative; top: 0.7em;"><strong>Other Settings</strong>&nbsp; </span>' +
         '</p><br />' +
-        '<div class="rpht-block"><label>PM Sound:   </label><input style="width: 300px;" type="text" id="pmPingURL" name="pmPingURL"></div><br />' +
-        '<div class="rpht-block"><label>Mute PMs:   </label><input type="checkbox" id="pmMute" name="pmMute"></div><br />' +
+        '<div class="rpht-block"><label>Chat history: </label><input style="width: 300px;" type="number" id="chatHistory" name="chatHistory" max="65535" min="10" value="300"><br /><br /></div>' +
+        '<div class="rpht-block"><label>No image icons in chat</label><input style="margin-right: 10px;" type="checkbox" id="imgIconDisable" name="imgIconDisable"></div>' +
+        '<div class="rpht-block"><label>Show username in tabs & textbox (requires rejoin)</label><input style="margin-right: 10px;" type="checkbox" id="showUsername" name="showUsername"></div>' +
+        /*'<div class="rpht-block"><label>Cleanup on reconnect</label><input style="margin-right: 10px;" type="checkbox" id="cleanupOnReconnect" name="cleanupOnReconnect"></div>' +*/
+      '</div>' +
+      '<br />' +
+      /* PM Settings */
+      '<h3 class="rpht_headers" id="pmSettingsHeader">PM</h3>' +
+      '<div id="pmSettingsForm" style="display:none;">'+
         '<p style="border-bottom: 2px solid #EEE;">' +
           '<span style="background: #333; position: relative; top: 0.7em;"><strong>PM Away System</strong>&nbsp; </span>' +
         '</p><br />' +
@@ -117,19 +144,20 @@ var html =
         '<select style="width: 403px;" id="pmNamesDroplist" size="5"></select><br><br>' +
         '<div class="rpht-block"><label>Away Message: </label><input style="width: 300px;" type="text" id="awayMessageTextbox" name="awayMessageTextbox" maxlength="300" placeholder="Away message..."></div>' +
         '<div class="rpht-block"><button type="button" id="setAwayButton">Enable</button> <button type="button" id="removeAwayButton">Disable</button></div>' +
-        '<p style="border-bottom: 2px solid #EEE;"><span style="background: #333; position: relative; top: 0.7em;">' +
-          '<strong>Extra Options</strong>&nbsp;' +
-        '</span></p> <br />' +
-        '<div class="rpht-block"><label>Chat history: </label><input style="width: 300px;" type="number" id="chatHistory" name="chatHistory" max="65535" min="10" value="300"><br /><br /></div>' +
-        '<div class="rpht-block"><label>No image icons in PM</label><input style="margin-right: 10px;" type="checkbox" id="roomLinksDisable" name="roomLinksDisable"></div>' +
-        '<div class="rpht-block"><label>No image icons in chat</label><input style="margin-right: 10px;" type="checkbox" id="imgIconDisable" name="imgIconDisable"></div>' +
-        '<div class="rpht-block"><label>Show username in tabs & textbox (requires rejoin)</label><input style="margin-right: 10px;" type="checkbox" id="showUsername" name="showUsername"></div>' +
+        '<br /><br />' +
+        '<p style="border-bottom: 2px solid #EEE;">' +
+          '<span style="background: #333; position: relative; top: 0.7em;"><strong>Other Settings</strong>&nbsp; </span>' +
+        '</p><br />' +
+        '<div class="rpht-block"><label>PM Sound:   </label><input style="width: 300px;" type="text" id="pmPingURL" name="pmPingURL"></div><br />' +
+        '<div class="rpht-block"><label>Mute PMs:   </label><input type="checkbox" id="pmMute" name="pmMute"></div><br />' +
+        '<div class="rpht-block"><label>No Image Icons: </label><input type="checkbox" id="pmIconsDisable" name="pmIconsDisable"></div>' +
       '</div>' +
       '<br />' +
-     '<h3 class="rpht_headers" id="diceHeader">Random Number Generators</h3>' +
-     '<div id="diceForm" style="display:none;">' +
-       '<p style="border-bottom: 2px solid #EEE;">' +
-         '<span style="background: #333; position: relative; top: 0.7em;"><strong>Type</strong>&nbsp;</span>' +
+      /* RNG */
+      '<h3 class="rpht_headers" id="rngHeader">Random Number Generators</h3>' +
+      '<div id="rngForm" style="display:none;">' +
+        '<p style="border-bottom: 2px solid #EEE;">' +
+          '<span style="background: #333; position: relative; top: 0.7em;"><strong>Type</strong>&nbsp;</span>' +
         '</p> <br />' +
         '<form>' +
           '<input style="width: 50px;" type="radio" name="rng" value="coin" id="coinRadio"> Coin tosser' +
@@ -164,6 +192,7 @@ var html =
         '<div class="rpht-block"><button style="margin-left: 341px;" type="button" id="unblockButton">Unblock</button></div>' +
       '</div>' +
       '<br />' +
+      /* Modding */
       '<h3 class="rpht_headers" id="moddingHeader">Modding</h3>' +
       '<div id="moddingForm" style="display:none;">' +
         '<p style="border-bottom: 2px solid #EEE;">' +
@@ -181,33 +210,45 @@ var html =
         '<p>Perform action on these users (semicolon separated with no space between): </p>' +
         '<textarea name="modTargetTextInput" id="modTargetTextInput" class="rpht_textarea"></textarea>' +
         '<br />' +
-        '<div class="rpht-block"><button type="button" id="kickButton">Kick</button>' +
+        '<div class="rpht-block">' +
+        '<button type="button" id="resetPassword">Reset PW</button>' +
+        '<button style="margin-left: 30px;" type="button" id="kickButton">Kick</button>' +
         '<button style="margin-left: 30px;" type="button" id="banButton">Ban</button>' +
-        '<button type="button" id="unbanButton">Unban</button>' +
-        '<button style="margin-left: 30px;"type="button" id="modButton">Mod</button>' +
-        '<button type="button" id="unmodButton">Unmod</button></div>' +
+        '<button style="margin-left: 6px;" type="button" id="unbanButton">Unban</button>' +
+        '<button style="margin-left: 30px;" type="button" id="modButton">Mod</button>' +
+        '<button style="margin-left: 6px;" type="button" id="unmodButton">Unmod</button></div>' +
       '</div>' +
       '<br />' +
-      '<h3 class="rpht_headers" id="importExportHeader">Import/Export Settings</h3>' +
+      /* Script settings */
+      '<h3 class="rpht_headers" id="importExportHeader">Script Settings</h3>' +
       '<div id="importExportForm" style="display:none;">' +
         '<br />' +
-        '<p>Press "Export" to export savable settings. To import settings, past them into the text box and press "Import".</p><br />' +
+        '<p>Press "Export" to export savable settings.</p>' +
+        '<p>To import settings, paste them into the text box and press "Import".</p><br />' +
         '<textarea name="importExportText" id="importExportTextarea" class="rpht_textarea" ></textarea>' +
         '<div class="rpht-block">' +
           '<button style="float: left;" type="button" id="exportButton">Export</button>' +
           '<button style="float: right;"type="button" id="importButton">Import</button>' +
-        '</div> <br /><br/>' +
+        '</div>' +
+        '<br />' +
+        '<p style="border-bottom: 2px solid #EEE;">' +
+          '<span style="background: #333; position: relative; top: 0.7em;"></span>' +
+        '</p><br />' +
+          /*'<button type="button" id="printSettingsButton">Print settings</button> (open console to see settings) <br /><br />' +*/
+          '<button type="button" id="deleteSettingsButton">Delete settings</button>' +
+        '<br /><br/>' +
       '</div>' +
       '<br />' +
-      '<h3 class="rpht_headers" id="aboutHelpHeader">About/Help</h3>' +
+      /* About */
+      '<h3 class="rpht_headers" id="aboutHeader">About</h3>' +
       '<div id="aboutHelpForm" style="display:none;">' +
-        '<br><p>Click on the "More Settings" button again to save your settings!</p>' +
+        '<br><p>Click on the "Settings" button again to save your settings!</p>' +
         '<p>You may need to refresh the chat for the settings to take effect.</p>' +
         '<br><p><a href="http://www.rphaven.com/topics.php?id=1#topic=1883&page=1" target="_blank">Report a problem</a> |' +
-        '<a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | RPH Tools 2.2.0</p><br>' +
-        '<p><button type="button" id="settingsButton">Print settings</button> (open console to see settings)</p>' +
+        '<a href="https://openuserjs.org/scripts/shuffyiosys/RPH_Tools#troubleshooting" target=_blank">Troubleshooting Tips</a> | '+ versString +'</p><br>' +
         '<br>' +
       '</div>' +
+      '<br />' +
     '</div>' +
   '</div>';
 
@@ -223,134 +264,88 @@ console.log('RPH Tools start');
  *         settings
  ***************************************************************************/
 $(function() {
-  scriptSettings.flags = 96;
-  tempSettings = 8;
+  scriptSettings.flags = RPHT_SHOW_NAMES;
 
   _on('accounts', function() {
-    var users = account.users;
-    clearUsersDropLists();
-    for(i = 0; i < users.length; i++) {
-      addUserToDroplist(users[i]);
-    }
-    console.log('RPH Tools[_on.accounts]: Account data blob received, adding users', users);
+    ProcessAccountEvt(account);
   });
 
   _on('ignores', function(data) {
-    console.log("RPH Tools[_on.ignores]: Blocking user from ignore button", data.ids[0]);
-    if (data.ids[0] !== undefined){
-      blockUserById(data.ids[0]);
-    }
+    ProcessIngoresEvt(data);
   });
 
   chatSocket.on('confirm-room-join', function(data) {
-    doRoomJoinSetup(data);
+    RoomJoinSetup(data);
   });
 
-  initRphTools();
+  _on('pm', function(data) {
+    HandleIncomingPm(data);
+  });
+
+  _on('outgoing-pm', function(data) {
+    HandleOutgoingPm(data);
+  });
+
+  chatSocket.on('user-kicked', function(data){
+    for(var i=0; i < account.users.length; i++){
+      if (data.targetid == account.users[i]){
+        $('<div class="inner"><p>You were kicked from '+data.room+'.<br />'+ ' Reason: '+ data.msg + '.</p></div>').dialog().dialog('open');
+      }
+    }
+	});
+
+  chatSocket.on('user-banned', function(data){
+    for(var i=0; i < account.users.length; i++){
+      if (data.targetid == account.users[i]){
+        $('<div class="inner"><p>You were banned from '+data.room+'.<br />'+ ' Reason: '+ data.msg + '.</p></div>').dialog().dialog('open');
+      }
+    }
+	});
+
+  InitRphTools();
 });
 
 /*****************************************************************************
  * @brief: Further initialize the script after receiving an account data blob.
  ***************************************************************************/
-function initRphTools(){
+function InitRphTools(){
   /* Set up HTML injection. */
   $('#random-quote').hide();
   $('a.settings').hide();
   $('#top p.right').prepend('<a class="pings settings">Settings</a>');
   $('body').append(html);
-  settingsTool.box = $('#settingsBox');
-  settingsTool.button = $('#top a.pings');
 
-  /* Load settings. */
-  if (typeof(storage) != "undefined") {
-    if (localStorage.getItem("chatSettings") !== null) {
-      scriptSettings = JSON.parse(localStorage.getItem("chatSettings"));
+  InitSettingsDialog();
+  LoadSettings();
 
-      snd = new Audio(scriptSettings.ping_url);
-      $('#im-sound').children("audio").attr('src', scriptSettings.pmPingUrl);
-      console.log("RPH Tools[initRphTools]: Loaded chat settings: ", scriptSettings);
-    }
-
-    if (localStorage.getItem("blockedUsers") !== null) {
-      var temp_blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
-      console.log("RPH Tools[initRphTools]: Loaded blocked users: ", temp_blockedUsers);
-
-      for (var i = 0; i < temp_blockedUsers.length; i++) {
-        console.log("RPH Tools[initRphTools]: Blocking user ", temp_blockedUsers[i]);
-        if (temp_blockedUsers[i] !== "") {
-          var user = temp_blockedUsers[i];
-          blockedUsers.push(user);
-          UserChangeIgnore(user.id, true);
-          $('#blockedDropList').append('<option value="' + user.id + '">' +
-                                        user.name + '</option>');
-        }
-      }
-    }
-  }
-
-  setTimeout(reblockList, 60*1000);
-  setupPMFunctions();
-  console.log('RPH Tools[initRphTools]: Init complete, setting up dialog box');
+  console.log('RPH Tools[InitRphTools]: Init complete, setting up dialog box');
   SetUpToolsDialog();
 }
 
 /****************************************************************************
- * @brief: Sets up all the ping dialog box GUI handling.
- ****************************************************************************/
+* 2. GUI SETUP FUNCTION
+****************************************************************************/
+/****************************************************************************
+* @brief: Sets up all the ping dialog box GUI handling.
+****************************************************************************/
 function SetUpToolsDialog() {
-  settingsTool.button.click(function() {
-    if (settingsTool.state === false)
-    {
-      settingsTool.state = true;
-      settingsTool.box.show();
-      reblockList();
-    }
-    else
-    {
-      if ((scriptSettings.flags & 1) > 0) {
-        console.log('RPH Tools[SetUpToolsDialog]: Chat settings were changed', scriptSettings);
-        scriptSettings.flags &= ~1;
-        if (validSettings === true) {
-          saveChatSettings(scriptSettings);
-        }
-      }
-      else{
-        console.log('RPH Tools[SetUpToolsDialog]: No chat settings were changed');
-      }
-      settingsTool.box.hide();
-      settingsTool.state = false;
-    }
-  });
-
   ChatSettingsSetup();
+  PmSettingsSetup();
   DiceRollSetup();
   BlockingSetup();
   ModdingSetup();
   ImportExportSetup();
+  AboutFormSetup();
 
-  $('#aboutHelpHeader').click(function() {
-    if (aboutHelpTool.state === true) {
-      $('#aboutHelpForm').hide();
-      aboutHelpTool.state = false;
-    }
-    else{
-      $('#aboutHelpForm').show();
-      aboutHelpTool.state = true;
-    }
-  });
+  PopulateSettingsDialog();
+  setTimeout(ReblockList, 60*1000);
 
-  $('#settingsButton').click(function() {
-    console.log('RPH Tools[SetUpToolsDialog]: Chat settings', scriptSettings);
-    console.log('RPH Tools[SetUpToolsDialog]: Blocked users', blockedUsers);
-    console.log('RPH Tools[SetUpToolsDialog]: Temp settings', tempSettings);
-  });
-
+  if (GetFlagState(RPHT_AUTO_JOIN) === true){
+    autoJoinTimer = setInterval(JoinFavoriteRooms, 5*1000);
+  }
   console.log('RPH Tools[SetUpToolsDialog]: Dialog box setup complete. RPH Tools is now ready.');
 }
 
-/****************************************************************************
- *                  CHAT ROOM AND PM SETTINGS FUNCTIONS
- ****************************************************************************/
 /****************************************************************************
  * @brief Sets up the chat settings group.
  *
@@ -358,132 +353,100 @@ function SetUpToolsDialog() {
  *        sake
  ****************************************************************************/
 function ChatSettingsSetup() {
-  $('#pingHeader').click(function() {
-    if (pingTool.state === true) {
-      $('#ping_form').hide();
-      pingTool.state = false;
+  settingsDialog.chat.button.click(function() {
+    if (settingsDialog.chat.state === true) {
+      settingsDialog.chat.form.hide();
+      settingsDialog.chat.state = false;
     }
     else{
-      $('#ping_form').show();
-      pingTool.state = true;
-      populateSettingsDialog();
+      settingsDialog.chat.form.show();
+      settingsDialog.chat.state = true;
     }
   });
 
   $('#pingNames').blur(function() {
     scriptSettings.pings = $('#pingNames').val().replace('\n','').replace('\r','');
-    scriptSettings.flags |= 1;
+    settingsChanged = true;
   });
 
   $('#pingURL').blur(function() {
-    var pingUrl = $('input#pingURL').val();
-    if (validateUrl(pingUrl) === false) {
-      mark_problem('pingURL', true);
-      validSettings = false;
-    }
-    else{
-      scriptSettings.ping_url = pingUrl;
-      snd = new Audio(scriptSettings.ping_url);
-      scriptSettings.flags |= 1;
-      mark_problem('pingURL', false);
-      validSettings = true;
-    }
+    UpdateChatPmSetting('pingURL', 'ping_url');
   });
 
   $('#pingTextColor').blur(function() {
-    var ping_color = $('input#pingTextColor').val();
-    if (validateColor(ping_color) === false) {
-      mark_problem('pingTextColor', true);
-      validSettings = false;
-    }
-    else{
-      scriptSettings.color = ping_color;
-      scriptSettings.flags |= 1;
-      mark_problem('pingTextColor', false);
-      validSettings = true;
-    }
+    UpdateChatPmSetting('pingTextColor', 'color');
   });
 
   $('#pingHighlightColor').blur(function() {
-    var ping_highlight = $('input#pingHighlightColor').val();
-    if (validateColor(ping_highlight) === false) {
-      mark_problem('pingHighlightColor', true);
-      validSettings = false;
-    }
-    else{
-      scriptSettings.highlight = ping_highlight;
-      scriptSettings.flags |= 1;
-      mark_problem('pingHighlightColor', false);
-      validSettings = true;
-    }
+    UpdateChatPmSetting('pingHighlightColor', 'highlight');
   });
 
   $('#pingBoldEnable').change(function() {
-    scriptSettings.flags ^= 2;
-    scriptSettings.flags |= 1;
+    ToggleFlag(RPHT_PING_BOLD);
   });
 
   $('#pingItalicsEnable').change(function() {
-    scriptSettings.flags ^= 4;
-    scriptSettings.flags |= 1;
+    ToggleFlag(RPHT_PING_ITALICS);
   });
 
   $('#pingExactMatch').change(function() {
-    scriptSettings.flags ^= 8;
-    scriptSettings.flags |= 1;
+    ToggleFlag(RPHT_PING_EXACT_MATCH);
   });
 
   $('#pingCaseSense').change(function() {
-    scriptSettings.flags ^= 16;
-    scriptSettings.flags |= 1;
-  });
-
-  $('#roomLinksDisable').change(function() {
-    scriptSettings.flags ^= 32;
-    scriptSettings.flags |= 1;
+    ToggleFlag(RPHT_PING_CASE_SENSE);
   });
 
   $('#showUsername').change(function() {
-    scriptSettings.flags ^= 64;
-    scriptSettings.flags |= 1;
+    ToggleFlag(RPHT_SHOW_NAMES);
   });
 
   $('#imgIconDisable').change(function() {
-    scriptSettings.flags ^= 128;
-    scriptSettings.flags |= 1;
+    ToggleFlag(RPHT_NO_ROOM_ICONS);
+  });
+
+  $('#favEnable').click(function(){
+    ToggleFlag(RPHT_AUTO_JOIN);
+    SaveChatSettings();
+  });
+
+  $('#favAdd').click(function(){
+    AddFavoriteRoom();
+  });
+
+  $('#favRemove').click(function(){
+    RemoveFavoriteRoom();
   });
 
   $('#userNameTextColorButton').click(function() {
-    var text_color = $('input#userNameTextColor').val();
-    if (validateColor(text_color) === false ||
-      validateColorRange(text_color) === false) {
-      mark_problem('userNameTextColor', true);
+    ChangeTextColor();
+  });
+
+  $('#chatHistory').change(function() {
+    rph.setSetting('maxHistory', parseInt($(this).val()) );
+  });
+}
+
+/****************************************************************************
+ * @brief Sets up PM settings dialog
+ *
+ * @note  Anything that deals with flags is listed by bit order for sanity's
+ *        sake
+ ****************************************************************************/
+function PmSettingsSetup() {
+  settingsDialog.pm.button.click(function() {
+    if (settingsDialog.pm.state === true) {
+      settingsDialog.pm.form.hide();
+      settingsDialog.pm.state = false;
     }
     else{
-      var userId = $('#userColorDroplist option:selected').val();
-
-      text_color = text_color.substring(1,text_color.length);
-      getUserById(userId, function(User) {
-        userToEdit = User;
-        mark_problem('userNameTextColor', false);
-        sendToSocket('modify', {userid:userToEdit.props.id, color:text_color});
-      });
+      settingsDialog.pm.form.show();
+      settingsDialog.pm.state = true;
     }
   });
 
   $('#pmPingURL').change(function(){
-    var pingUrl = $('input#pmPingURL').val();
-    if (validateUrl(pingUrl) === false) {
-      mark_problem('pmPingURL', true);
-      validSettings = false;
-    }
-    else{
-      $('#im-sound').children("audio").attr('src', pingUrl);
-      scriptSettings.pmPingUrl = pingUrl;
-      scriptSettings.flags |= 1;
-      mark_problem('pmPingURL', false);
-      validSettings = true;
-    }
+    UpdateChatPmSetting('pmPingURL', 'pmPingUrl');
   });
 
   $('#pmMute').change(function(){
@@ -493,6 +456,10 @@ function ChatSettingsSetup() {
     else {
       $('#im-sound').children("audio").attr('src', scriptSettings.pmPingUrl);
     }
+  });
+
+  $('#pmIconsDisable').change(function() {
+    ToggleFlag(RPHT_NO_PM_ICONS);
   });
 
   $('#pmNamesDroplist').change(function() {
@@ -506,144 +473,66 @@ function ChatSettingsSetup() {
   });
 
   $('#setAwayButton').click(function() {
-    var userId = $('#pmNamesDroplist option:selected').val();
-    var name = $("#pmNamesDroplist option:selected").html();
-    if (awayMessages[userId] !== undefined) {
-      if (awayMessages[userId].enabled === false){
-        $("#pmNamesDroplist option:selected").html("[Away]" + name);
-      }
-      awayMessages[userId].enabled = true;
-      awayMessages[userId].message = $('input#awayMessageTextbox').val();
-      $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
-      $("#pmNamesDroplist option:selected").prop("selected", false);
-
-      console.log('RPH Tools[ChatSettingsSetup]: Setting away message for', name, 'with message', awayMessages[userId].message);
-    }
-    else{
-      var awayMsgObj = {
-        "usedPmAwayMsg" : false,
-        "message"       : "",
-        "enabled"       : true
-      };
-      awayMsgObj.message = $('input#awayMessageTextbox').val();
-      awayMessages[userId] = awayMsgObj;
-
-      $("#pmNamesDroplist option:selected").html("[Away]" + name);
-      $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
-      $("#pmNamesDroplist option:selected").prop("selected", false);
-    }
+    SetPmAway();
   });
 
   $('#removeAwayButton').click(function() {
-    var userId = $('#pmNamesDroplist option:selected').val();
-
-    if (awayMessages[userId] !== undefined) {
-      if (awayMessages[userId].enabled === true) {
-        var name = $("#pmNamesDroplist option:selected").html();
-
-        awayMessages[userId].enabled = false;
-        $("#pmNamesDroplist option:selected").html(name.substring(6,name.length));
-        $("#pmNamesDroplist option:selected").css("background-color", "");
-        $('input#awayMessageTextbox').val("");
-        console.log('RPH Tools[ChatSettingsSetup]: Remove away message for', name);
-      }
-    }
-  });
-
-  $('#chatHistory').change(function() {
-    rph.setSetting('maxHistory', parseInt($(this).val()) );
+    RemovePmAway();
   });
 }
 
 /****************************************************************************
- * @brief Populates the dialog with settings from the gathered settings.
- *
- * @param user_id - ID of username
- ****************************************************************************/
-function populateSettingsDialog() {
-  $('#pingNames').val(scriptSettings.pings);
-  $('#pingURL').val(scriptSettings.ping_url);
-  $('#pingTextColor').val(scriptSettings.color);
-  $('#pingHighlightColor').val(scriptSettings.highlight);
-  $('#pmPingURL').val(scriptSettings.pmPingUrl);
-
-  $('input#pingBoldEnable').prop("checked", (scriptSettings.flags & 2) > 0);
-  $('input#pingItalicsEnable').prop("checked", (scriptSettings.flags & 4) > 0);
-  $('input#pingExactMatch').prop("checked", (scriptSettings.flags & 8) > 0);
-  $('input#pingCaseSense').prop("checked", (scriptSettings.flags & 16) > 0);
-  $('input#roomLinksDisable').prop("checked", (scriptSettings.flags & 32) > 0);
-  $('input#showUsername').prop("checked", (scriptSettings.flags & 64) > 0);
-  $('inputimgIconDisable').prop("checked", (scriptSettings.flags & 128) > 0);
-
-  // Prevents populating the dialogue from counting as a change.
-  scriptSettings.flags &= ~1;
-}
-
-/****************************************************************************
- * @brief:    Saves the chat and PM settings into local storage
- ****************************************************************************/
-function saveChatSettings() {
-  localStorage.removeItem("chatSettings");
-  localStorage.setItem("chatSettings", JSON.stringify(scriptSettings));
-  console.log("RPH Tools[saveChatSettings]: Saving chat settings... ", localStorage.getItem("chatSettings"));
-}
-
-/****************************************************************************
- *                   RANDOM NUMBER GENERATOR FUNCTIONS
- ****************************************************************************/
-
-/****************************************************************************
- * @brief:    Sets up the GUI callbacks and behavior for the RNGs.
- ****************************************************************************/
+* @brief:    Sets up the GUI callbacks and behavior for the RNGs.
+****************************************************************************/
 function DiceRollSetup() {
-  $('#diceHeader').click(function() {
-    if (diceTool.state === true) {
-      $('#diceForm').hide();
-      diceTool.state = false;
+  settingsDialog.rng.button.click(function() {
+    if (settingsDialog.rng.state === true) {
+      settingsDialog.rng.form.hide();
+      settingsDialog.rng.state = false;
     }
     else{
-      $('#diceForm').show();
-      diceTool.state = true;
+      settingsDialog.rng.form.show();
+      settingsDialog.rng.state = true;
     }
   });
 
   $('#diceNum').blur(function() {
     var dieNum = parseInt($('#diceNum').val());
-    if (dieNum < 1) {
-      $('#diceNum').val(1);
+    if (dieNum < RPHT_DIE_MIN) {
+      $('#diceNum').val(RPHT_DIE_MIN);
     }
-    else if (10 < dieNum) {
-      $('#diceNum').val(10);
+    else if (RPHT_DIE_MAX < dieNum) {
+      $('#diceNum').val(RPHT_DIE_MAX);
     }
   });
 
   $('#diceSides').blur(function() {
     var dieSides = parseInt($('#diceSides').val());
-    if (dieSides < 2) {
-      $('#diceSides').val(2);
+    if (dieSides < RPHT_DIE_SIDE_MIN) {
+      $('#diceSides').val(RPHT_DIE_SIDE_MIN);
     }
-    else if (100 < dieSides) {
-      $('#diceSides').val(100);
+    else if (RPHT_DIE_SIDE_MAX < dieSides) {
+      $('#diceSides').val(RPHT_DIE_SIDE_MAX);
     }
   });
 
   $('#rngMinNumber').blur(function() {
     var minNum = parseInt($('#rngMinNumber').val());
-    if (minNum < -4294967296) {
-      $('#rngMinNumber').val(-4294967296);
+    if (minNum < RPHT_RNG_NUM_MIN) {
+      $('#rngMinNumber').val(RPHT_RNG_NUM_MIN);
     }
-    else if (4294967296 < minNum) {
-      $('#rngMinNumber').val(4294967296);
+    else if (RPHT_RNG_NUM_MAX < minNum) {
+      $('#rngMinNumber').val(RPHT_RNG_NUM_MAX);
     }
   });
 
   $('#rngMaxNumber').blur(function() {
     var maxNum = parseInt($('#rngMaxNumber').val());
-    if (maxNum < -4294967296) {
-      $('#rngMaxNumber').val(-4294967296);
+    if (maxNum < RPHT_RNG_NUM_MIN) {
+      $('#rngMaxNumber').val(RPHT_RNG_NUM_MIN);
     }
-    else if (4294967295 < maxNum) {
-      $('#rngMaxNumber').val(4294967296);
+    else if (RPHT_RNG_NUM_MAX < maxNum) {
+      $('#rngMaxNumber').val(RPHT_RNG_NUM_MAX);
     }
   });
 
@@ -660,21 +549,351 @@ function DiceRollSetup() {
   });
 
   $('#coinRadio').change(function() {
-    DisplayRNG('coin');
+    ChangeRngDisplay('coin');
   });
   $('#diceRadio').change(function() {
-    DisplayRNG('dice');
+    ChangeRngDisplay('dice');
   });
   $('#rngRadio').change(function() {
-    DisplayRNG('rng');
+    ChangeRngDisplay('rng');
   });
 
 }
+
 /****************************************************************************
- * @brief:    Changes the RNG options being displayed
- * @param:    "option", option to be displayed ("coin", "dice", "rng")
+* @brief:    Sets up the GUI callbacks and behavior for blocking
+****************************************************************************/
+function BlockingSetup() {
+  settingsDialog.blocking.button.click(function() {
+    if (settingsDialog.blocking.state === true) {
+      settingsDialog.blocking.form.hide();
+      settingsDialog.blocking.state = false;
+    }
+    else{
+      settingsDialog.blocking.form.show();
+      settingsDialog.blocking.state = true;
+    }
+  });
+
+  $('#blockButton').click(function() {
+    var userName = $('#nameCheckTextbox').val();
+    BlockUserByName(userName);
+  });
+
+  $('#unblockButton').click(function() {
+    RemoveFromBlockList();
+  });
+}
+
+/****************************************************************************
+* @brief:    Sets up the GUI callbacks and behavior for modding functions
+****************************************************************************/
+function ModdingSetup() {
+  settingsDialog.modding.button.click(function() {
+    if (settingsDialog.modding.state === true) {
+      settingsDialog.modding.form.hide();
+      settingsDialog.modding.state = false;
+    }
+    else{
+      settingsDialog.modding.form.show();
+      settingsDialog.modding.state = true;
+    }
+  });
+
+  $('#roomModSelect').change(function() {
+    var roomModPair_sel = document.getElementById("roomModSelect");
+    var roomModVal = roomModPair_sel.options[roomModPair_sel.selectedIndex].value;
+    if (roomNamePairs[roomModVal] !== undefined) {
+      $('input#modRoomTextInput').val(roomNamePairs[roomModVal].room);
+      $('input#modFromTextInput').val(roomNamePairs[roomModVal].modName);
+    }
+    else{
+      $('input#modRoomTextInput').val("");
+      $('input#modFromTextInput').val("");
+    }
+  });
+
+  $('#resetPassword').click(function(){
+    var room = $('input#modRoomTextInput').val();
+    var user = $('input#modFromTextInput').val();
+    getUserByName($('input#modFromTextInput').val(), function(User) {
+      var userId = User.props.id;
+      chatSocket.emit('modify', {room:room, userid:userId, props:{pw:false}});
+    });
+  });
+
+  $('#kickButton').click(function() {
+    ModAction('kick');
+  });
+
+  $('#banButton').click(function() {
+    ModAction('ban');
+  });
+
+  $('#unbanButton').click(function() {
+    ModAction('unban');
+  });
+
+  $('#modButton').click(function() {
+    ModAction('add-mod');
+  });
+
+  $('#unmodButton').click(function() {
+    ModAction('remove-mod');
+  });
+}
+
+/****************************************************************************
+ * @brief:    Sets up callback functions for importing/exporting settings
  ****************************************************************************/
-function DisplayRNG(option) {
+function ImportExportSetup() {
+  settingsDialog.importExport.button.click(function() {
+    if (settingsDialog.importExport.state === true) {
+      settingsDialog.importExport.form.hide();
+      settingsDialog.importExport.state = false;
+    }
+    else{
+      settingsDialog.importExport.form.show();
+      settingsDialog.importExport.state = true;
+    }
+  });
+
+  $('#importButton').click(function() {
+    ImportSettings();
+  });
+
+  $('#exportButton').click(function() {
+    ExportSettings();
+  });
+
+  $('#printSettingsButton').click(function() {
+    PrintSettings();
+  });
+
+  $('#deleteSettingsButton').click(function(){
+    DeleteSettings();
+  });
+}
+
+/****************************************************************************
+* @brief:    Sets up callback functions for the about area
+****************************************************************************/
+function AboutFormSetup(){
+  settingsDialog.about.button.click(function() {
+    if (settingsDialog.about.state === true) {
+      settingsDialog.about.form.hide();
+      settingsDialog.about.state = false;
+    }
+    else{
+      settingsDialog.about.form.show();
+      settingsDialog.about.state = true;
+    }
+  });
+}
+
+/****************************************************************************
+* @brief Populates the dialog with settings from the gathered settings.
+*
+* @param user_id - ID of username
+****************************************************************************/
+function PopulateSettingsDialog() {
+  $('#pingNames').val(scriptSettings.pings);
+  $('#pingURL').val(scriptSettings.ping_url);
+  $('#pingTextColor').val(scriptSettings.color);
+  $('#pingHighlightColor').val(scriptSettings.highlight);
+  $('#pmPingURL').val(scriptSettings.pmPingUrl);
+
+  $('input#favEnable').prop("checked", GetFlagState(RPHT_AUTO_JOIN));
+  $('input#pingBoldEnable').prop("checked", GetFlagState(RPHT_PING_BOLD));
+  $('input#pingItalicsEnable').prop("checked", GetFlagState(RPHT_PING_ITALICS));
+  $('input#pingExactMatch').prop("checked", GetFlagState(RPHT_PING_EXACT_MATCH));
+  $('input#pingCaseSense').prop("checked", GetFlagState(RPHT_PING_CASE_SENSE));
+  $('input#pmIconsDisable').prop("checked", GetFlagState(RPHT_NO_PM_ICONS));
+  $('input#showUsername').prop("checked", GetFlagState(RPHT_SHOW_NAMES));
+  $('inputimgIconDisable').prop("checked", GetFlagState(RPHT_NO_ROOM_ICONS));
+
+  for(var i = 0; i < scriptSettings.favRooms.length; i++){
+    var favRoomObj = scriptSettings.favRooms[i];
+    $('#favRoomsList').append(
+      '<option value="' + favRoomObj._id + '">' +
+      favRoomObj.user + ": " + favRoomObj.room + '</option>'
+    );
+  }
+
+  if (scriptSettings.favRooms.length >= 10){
+    $('#favAdd').text("Favorites Full");
+    $('#favAdd')[0].disabled = true;
+  }
+
+  // Prevents populating the dialogue from counting as a change.
+  settingsChanged = false;
+}
+
+/****************************************************************************
+ * @brief Changes the character's text color.
+ *
+ ****************************************************************************/
+function ChangeTextColor(){
+  var text_color = $('input#userNameTextColor').val();
+  if (ValidateColor(text_color) === false ||
+    ValidateColorRange(text_color) === false) {
+    MarkProblem('userNameTextColor', true);
+  }
+  else{
+    var userId = $('#userColorDroplist option:selected').val();
+
+    text_color = text_color.substring(1,text_color.length);
+    getUserById(userId, function(User) {
+      MarkProblem('userNameTextColor', false);
+      sendToSocket('modify', {userid:User.props.id, color:text_color});
+    });
+  }
+}
+
+/****************************************************************************
+ * @brief Adds a room and user to the favorite's list
+ *
+ ****************************************************************************/
+function AddFavoriteRoom(){
+  var room =  getRoom($('#favRoom').val());
+
+  if (room === undefined){
+    MarkProblem('favRoom', true);
+    return;
+  }
+
+  if (scriptSettings.favRooms.length < 10){
+    var favExists = false;
+    var hashStr = $('#favRoom').val() + $('#favUserList option:selected').html();
+    var favRoomObj = {
+        _id: hashStr.hashCode(),
+        user : $('#favUserList option:selected').html(),
+        userId: parseInt($('#favUserList option:selected').val()),
+        room : $('#favRoom').val(),
+        roomPw : $('#favRoomPw').val()
+      };
+
+    MarkProblem('favRoom', false);
+    if (ArrayObjectIndexOf(scriptSettings.favRooms, "_id", favRoomObj._id) === -1){
+      $('#favRoomsList').append(
+        '<option value="' + favRoomObj._id + '">' +
+        favRoomObj.user + ": " + favRoomObj.room + '</option>'
+      );
+      scriptSettings.favRooms.push(favRoomObj);
+      console.log('RPH Tools[AddFavoriteRoom]: Added favorite room', favRoomObj);
+    }
+
+    if (scriptSettings.favRooms.length >= 10){
+      $('#favAdd').text("Favorites Full");
+      $('#favAdd')[0].disabled = true;
+    }
+  }
+  SaveChatSettings();
+}
+
+/****************************************************************************
+ * @brief Removes a room and user to the favorite's list
+ *
+ ****************************************************************************/
+function RemoveFavoriteRoom(){
+  var favItem = document.getElementById("favRoomsList");
+  var favItemId = $('#favRoomsList option:selected').val();
+  favItem.remove(favItem.selectedIndex);
+
+  for(var favs_i = 0; favs_i < scriptSettings.favRooms.length; favs_i++){
+    if (scriptSettings.favRooms[favs_i]._id == favItemId){
+      scriptSettings.favRooms.splice(favs_i, 1);
+      break;
+    }
+  }
+
+  if (scriptSettings.favRooms.length < 10){
+    $('#favAdd').text("Add");
+    $('#favAdd')[0].disabled = false;
+  }
+
+  SaveChatSettings();
+}
+
+/****************************************************************************
+* @brief      Automatically joins rooms in the saved list.
+*
+****************************************************************************/
+function JoinFavoriteRooms(){
+  if (roomnames.length > 10){
+    for(var i = 0; i < scriptSettings.favRooms.length; i++){
+      var favRoom = scriptSettings.favRooms[i];
+      chatSocket.emit('join', {name:favRoom.room, userid:favRoom.userId, pw:favRoom.roomPw});
+    }
+
+    if (autoJoinTimer !== null){
+      clearTimeout(autoJoinTimer);
+    }
+  }
+}
+
+/****************************************************************************
+PM functions
+****************************************************************************/
+/****************************************************************************
+* @brief:    Sets up PM Away Messages
+****************************************************************************/
+function SetPmAway(){
+  var userId = $('#pmNamesDroplist option:selected').val();
+  var name = $("#pmNamesDroplist option:selected").html();
+  if (awayMessages[userId] !== undefined) {
+    if (awayMessages[userId].enabled === false){
+      $("#pmNamesDroplist option:selected").html("[Away]" + name);
+    }
+    awayMessages[userId].enabled = true;
+    awayMessages[userId].message = $('input#awayMessageTextbox').val();
+    $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
+    $("#pmNamesDroplist option:selected").prop("selected", false);
+
+    console.log('RPH Tools[ChatSettingsSetup]: Setting away message for', name, 'with message', awayMessages[userId].message);
+  }
+  else{
+    var awayMsgObj = {
+      "usedPmAwayMsg" : false,
+      "message"       : "",
+      "enabled"       : true
+    };
+    awayMsgObj.message = $('input#awayMessageTextbox').val();
+    awayMessages[userId] = awayMsgObj;
+
+    $("#pmNamesDroplist option:selected").html("[Away]" + name);
+    $("#pmNamesDroplist option:selected").css("background-color", "#FFD800");
+    $("#pmNamesDroplist option:selected").prop("selected", false);
+  }
+}
+
+/****************************************************************************
+* @brief:    Removes PM away message
+****************************************************************************/
+function RemovePmAway(){
+  var userId = $('#pmNamesDroplist option:selected').val();
+
+  if (awayMessages[userId] !== undefined) {
+    if (awayMessages[userId].enabled === true) {
+      var name = $("#pmNamesDroplist option:selected").html();
+
+      awayMessages[userId].enabled = false;
+      $("#pmNamesDroplist option:selected").html(name.substring(6,name.length));
+      $("#pmNamesDroplist option:selected").css("background-color", "");
+      $('input#awayMessageTextbox').val("");
+      console.log('RPH Tools[ChatSettingsSetup]: Remove away message for', name);
+    }
+  }
+}
+
+/****************************************************************************
+RNG functions
+****************************************************************************/
+/****************************************************************************
+* @brief:    Changes the RNG options being displayed
+* @param:    "option", option to be displayed ("coin", "dice", "rng")
+****************************************************************************/
+function ChangeRngDisplay(option) {
   if (option === 'coin')
   {
     $('#diceOptions').hide();
@@ -694,70 +913,98 @@ function DisplayRNG(option) {
 }
 
 /****************************************************************************
- * @brief:    Performs an RNG action
- * @param:    "action", Which RNG action to perform ('coin', 'dice', 'rng')
- ****************************************************************************/
+* @brief:    Performs an RNG action
+* @param:    "action", Which RNG action to perform ('coin', 'dice', 'rng')
+****************************************************************************/
 function RunRNG(action) {
   var class_name = $('li.active')[0].className.split(" ");
   var room_name = "";
   var this_room = null;
   var userID = parseInt(class_name[2].substring(0,6));
-  var new_msg = '';
+  var outcomeMsg = '';
 
   /* Populate room name based on if showing usernames is checked. */
-  if ((scriptSettings.flags & 64) > 0) {
+  if (GetFlagState(RPHT_SHOW_NAMES)) {
     room_name = $('li.active').find("span:first").text();
   }
   else {
     room_name = $('li.active')[0].textContent.slice(0,-1);
   }
-  console.log(room_name);
+
   this_room = getRoom(room_name);
 
   if (action == "coin") {
-    new_msg = '(( Coin toss: ';
-    if (Math.ceil(Math.random() * 2) == 2) {
-      new_msg += '**heads!**))';
-    }
-    else{
-      new_msg += '**tails!**))';
-    }
+    outcomeMsg = Rng_flipCoin();
   }
   else if (action == "dice") {
-    var totals = 0;
-    var dieNum = parseInt($('#diceNum').val());
-    var dieSides =  parseInt($('#diceSides').val());
-    new_msg = '/me rolled ' + dieNum + 'd' + dieSides + ':';
-
-    for(i = 0; i < dieNum; i++) {
-      var result = Math.ceil(Math.random() * dieSides);
-      if ($('#showRollTotals')[0].checked) {
-        totals += result;
-      }
-      new_msg += ' ';
-      new_msg += result;
-    }
-
-    if ($('#showRollTotals')[0].checked) {
-      new_msg += " (Total amount: " + totals + ")";
-    }
+    outcomeMsg = Rng_rollDice();
   }
   else if (action == "rng") {
-    var minNum = parseInt($('#rngMinNumber').val());
-    var maxNum =  parseInt($('#rngMaxNumber').val());
-    new_msg = '(( Random number generated: **';
-
-    new_msg += Math.floor((Math.random() * (maxNum - minNum) + minNum)) + '** ))';
+    outcomeMsg = Rng_randomNumber();
   }
 
-  this_room.sendMessage(new_msg, userID);
-  DisableButtons(action);
+  outcomeMsg += '\u200b';
+  this_room.sendMessage(outcomeMsg, userID);
+  DisableRngButtons(action);
+}
+
+/****************************************************************************
+* @brief:    Generates a coin toss
+****************************************************************************/
+function Rng_flipCoin(){
+  var coinMsg = '(( Coin toss: ';
+  if (Math.ceil(Math.random() * 2) == 2) {
+    coinMsg += '**heads!**))';
+  }
+  else{
+    coinMsg += '**tails!**))';
+  }
+
+  return coinMsg;
+}
+
+/****************************************************************************
+* @brief:    Generates a dice roll.
+****************************************************************************/
+function Rng_rollDice(){
+  var totals = 0;
+  var dieNum = parseInt($('#diceNum').val());
+  var dieSides =  parseInt($('#diceSides').val());
+  var dieMsg = '/me rolled ' + dieNum + 'd' + dieSides + ':';
+
+  for(i = 0; i < dieNum; i++) {
+    var result = Math.ceil(Math.random() * dieSides);
+    if ($('#showRollTotals')[0].checked) {
+      totals += result;
+    }
+    dieMsg += ' ';
+    dieMsg += result;
+  }
+
+  if ($('#showRollTotals')[0].checked) {
+    dieMsg += " (Total amount: " + totals + ")";
+  }
+
+  return dieMsg;
+}
+
+/****************************************************************************
+* @brief:    Generates a random number
+****************************************************************************/
+function Rng_randomNumber(){
+  var minNum = parseInt($('#rngMinNumber').val());
+  var maxNum =  parseInt($('#rngMaxNumber').val());
+  var ranNumMsg = '(( Random number generated (' + minNum + ' to ' + maxNum + '): **';
+
+  ranNumMsg += Math.floor((Math.random() * (maxNum - minNum) + minNum)) + '** ))';
+
+  return ranNumMsg;
 }
 
 /****************************************************************************
  * @brief:    Disables the RNG buttons for three seconds.
  ****************************************************************************/
-function DisableButtons(action) {
+function DisableRngButtons(action) {
   $('#rngButton').text('Wait...');
   $('#rngRadio')[0].disabled = true;
   $('#diceRadio')[0].disabled = true;
@@ -769,70 +1016,18 @@ function DisableButtons(action) {
     $('#diceRadio')[0].disabled = false;
     $('#coinRadio')[0].disabled = false;
     $('#rngButton')[0].disabled = false;
-    DisplayRNG(action);
+    ChangeRngDisplay(action);
   }, 3000);
 }
-/****************************************************************************
- *                          BLOCKING FUNCTIONS
- ****************************************************************************/
-/****************************************************************************
- * @brief:    Sets up the GUI callbacks and behavior for blocking
- ****************************************************************************/
-function BlockingSetup() {
-  $('#blockHeader').click(function() {
-    if (blockTool.state === true) {
-      $('#blockForm').hide();
-      blockTool.state = false;
-    }
-    else{
-      $('#blockForm').show();
-      blockTool.state = true;
-    }
-  });
-
-  $('#blockButton').click(function() {
-    var userToBlock = null;
-    var userName = $('#nameCheckTextbox').val();
-    getUserByName(userName, function(User) {
-      userToBlock = User;
-
-      if (userToBlock !== null) {
-        blockUser(userToBlock);
-        saveBlockSettings();
-        mark_problem('nameCheckTextbox', false);
-      }
-      else{
-        mark_problem('nameCheckTextbox', true);
-      }
-    });
-  });
-
-  $('#unblockButton').click(function() {
-    var names = document.getElementById("blockedDropList");
-    var userId = names.options[names.selectedIndex].value;
-    UserChangeIgnore(userId, false);
-    names.remove(names.selectedIndex);
-    blockedUsers.splice(blockedUsers.indexOf(userId),1);
-    saveBlockSettings();
-  });
-}
 
 /****************************************************************************
- * @brief:    Changes the ignore settings for a user
- * @param:    UserId - ID of the user whose ignore settings are being changed
- * @param:    Ignore - Ignore value to set to (true/false)
- ****************************************************************************/
-function UserChangeIgnore(UserId, Ignore) {
-  getUserById(UserId, function(User) {
-    User.blocked = Ignore;
-  });
-}
-
+Blocking Functions
+****************************************************************************/
 /****************************************************************************
- * @brief:    Sets the "block" flag for a user
+ * @brief:    Adds a user to the internal and dialog block list.
  * @param:    User - User object for the username being blocked
  ****************************************************************************/
-function blockUser(User) {
+function AddToBlockList(User) {
   /* Check if this user is already in the list. */
   var inList = false;
 
@@ -848,119 +1043,101 @@ function blockUser(User) {
                                   User.props.name + '</option>');
   }
 
-  console.log('RPH Tools[blockUser]: Blocking user', User.props.name);
+  console.log('RPH Tools[BlockUser]: Blocking user', User.props.name);
   User.blocked = true;
 }
 
 /****************************************************************************
- * @brief:    Blocks a user by their ID
- * @param:    userID - ID of the using being blocked
- *
- * @note:     This is defined here to make lint tools happy about not defining
- *            a function in a loop.
- ****************************************************************************/
-function blockUserById(userID) {
+* @brief:    Removes a user from the internal and dialog block list.
+****************************************************************************/
+function RemoveFromBlockList(){
+  var names = document.getElementById("blockedDropList");
+  var userId = $('#blockedDropList option:selected').val();
+  UnblockUser(userId);
+  names.remove(names.selectedIndex);
+  blockedUsers.splice(blockedUsers.indexOf(userId),1);
+  SaveBlockSettings();
+}
+
+/****************************************************************************
+* @brief:   Blocks everyone on the list. Used to refresh blocking.
+****************************************************************************/
+function ReblockList(){
+  console.log('RPH Tools[ReblockList]: reblocking everyone');
+  for(var i = 0; i < blockedUsers.length; i++){
+    BlockUser(blockedUsers[i].id);
+  }
+}
+
+/****************************************************************************
+* @brief:    Sets the blocked flag to true for a user.
+* @param:    UserId - ID of the user whose ignore settings are being changed
+****************************************************************************/
+function BlockUser(UserId) {
+  getUserById(UserId, function(User) {
+    User.blocked = true;
+  });
+}
+
+/****************************************************************************
+* @brief:    Sets the blocked flag to false for a user.
+* @param:    UserId - ID of the user whose ignore settings are being changed
+****************************************************************************/
+function UnblockUser(UserId){
+  getUserById(UserId, function(User) {
+    User.blocked = false;
+  });
+}
+
+/****************************************************************************
+* @brief:    Blocks a user by their ID
+* @param:    userID - ID of the using being blocked
+****************************************************************************/
+function BlockUserById(userID) {
   if (userID !== undefined){
     getUserById(userID, function(User) {
-      blockUser(User);
-      saveBlockSettings();
+      AddToBlockList(User);
+      SaveBlockSettings();
     });
   }
 }
 
 /****************************************************************************
- * @brief:   Saves the blocked users list into a cookie.
- ****************************************************************************/
-function saveBlockSettings() {
-  localStorage.removeItem("blockedUsers");
-  localStorage.setItem("blockedUsers", JSON.stringify(blockedUsers));
-  console.log("RPH Tools[saveBlockSettings]: Saving blocked users (storage, session)",
-               localStorage.getItem("blockedUsers"), blockedUsers);
-}
-
-
-/****************************************************************************
- * @brief:   Blocks everyone on the list. Used to refresh blocking.
- ****************************************************************************/
-function reblockList(){
-  console.log('RPH Tools[reblockList]: reblocking everyone');
-  for(var i = 0; i < blockedUsers.length; i++){
-    UserChangeIgnore(blockedUsers[i].id, true);
+* @brief:    Blocks a user by their name
+* @param:    username - username of the using being blocked
+****************************************************************************/
+function BlockUserByName(username){
+  if (username !== undefined){
+    getUserByName(username, function(user){
+      AddToBlockList(user);
+      SaveBlockSettings();
+    });
   }
 }
 
 /****************************************************************************
- *                      MODDING TOOLS FUNCTIONS
- ****************************************************************************/
+Modding Functions
+****************************************************************************/
 /****************************************************************************
- * @brief:    Sets up the GUI callbacks and behavior for modding functions
- ****************************************************************************/
-function ModdingSetup() {
-  $('#moddingHeader').click(function() {
-    if (modTool.state === true) {
-      $('#moddingForm').hide();
-      modTool.state = false;
-    }
-    else{
-      $('#moddingForm').show();
-      modTool.state = true;
-    }
-  });
-
-  $('#roomModSelect').change(function() {
-    var roomModPair_sel = document.getElementById("roomModSelect");
-    var roomModVal = roomModPair_sel.options[roomModPair_sel.selectedIndex].value;
-    if (roomNamePairs[roomModVal] !== undefined) {
-      $('input#modRoomTextInput').val(roomNamePairs[roomModVal].room);
-      $('input#modFromTextInput').val(roomNamePairs[roomModVal].modName);
-    }
-    else{
-      $('input#modRoomTextInput').val("");
-      $('input#modFromTextInput').val("");
-    }
-  });
-
-  $('#kickButton').click(function() {
-    modAction('kick');
-  });
-
-  $('#banButton').click(function() {
-    modAction('ban');
-  });
-
-  $('#unbanButton').click(function() {
-    modAction('unban');
-  });
-
-  $('#modButton').click(function() {
-    modAction('add-mod');
-  });
-
-  $('#unmodButton').click(function() {
-    modAction('remove-mod');
-  });
-}
-
-/****************************************************************************
- * @brief:    Performs a modding action
- * @param:    action - string command that has the action.
- ****************************************************************************/
-function modAction(action) {
+* @brief:    Performs a modding action
+* @param:    action - string command that has the action.
+****************************************************************************/
+function ModAction(action) {
   var targets = $('#modTargetTextInput').val().replace('\n','').replace('\r','');
   targets = targets.split(';');
-  console.log('RPH Tools[modAction]: Performing', action, 'on', targets);
+  console.log('RPH Tools[ModAction]: Performing', action, 'on', targets);
 
   for(var i = 0; i < targets.length; i++) {
-    emitModAction(action, targets[i]);
+    EmitModAction(action, targets[i]);
   }
 }
 
 /****************************************************************************
- * @brief:    Sends off the mod action
- * @param:    action - string command that has the action.
- * @param:    targetName - user name that the action is meant for.
- ****************************************************************************/
-function emitModAction(action, targetName) {
+* @brief:    Sends off the mod action
+* @param:    action - string command that has the action.
+* @param:    targetName - user name that the action is meant for.
+****************************************************************************/
+function EmitModAction(action, targetName) {
   var room = $('input#modRoomTextInput').val();
   var user = $('input#modFromTextInput').val();
   var userId = 0;
@@ -997,42 +1174,16 @@ function emitModAction(action, targetName) {
     else if (action === 'kick') {
       modMessage = "Kicking: " + target + " by: " + user + " In room: " + room;
     }
-    console.log('RPH Tools[emitModAction]:', modMessage);
+    console.log('RPH Tools[EmitModAction]:', modMessage);
   });
 }
 
 /****************************************************************************
- *                        IMPORT/EXPORT FUNCTIONS
- ****************************************************************************/
+Script settings functions
+****************************************************************************/
 /****************************************************************************
- * @brief:    Sets up callback functions for importing/exporting settings
- ****************************************************************************/
-function ImportExportSetup() {
-  $('#importExportHeader').click(function() {
-    if (importExport.state === true) {
-      $('#importExportForm').hide();
-      importExport.state = false;
-    }
-    else{
-      $('#importExportForm').show();
-      importExport.state = true;
-    }
-  });
-
-  $('#importButton').click(function() {
-    ImportSettings();
-  });
-
-  $('#exportButton').click(function() {
-    var chatSettings_str = JSON.stringify(scriptSettings);
-    var blockedUsers_str = JSON.stringify(blockedUsers);
-    $('textarea#importExportTextarea').val(chatSettings_str + "|" + blockedUsers_str);
-  });
-}
-
-/****************************************************************************
- * @brief:    Imports settings from the textarea.
- ****************************************************************************/
+* @brief:    Imports settings from the textarea.
+****************************************************************************/
 function ImportSettings() {
   var settings_str = $('textarea#importExportTextarea').val();
   var chatSettings_str = '';
@@ -1046,87 +1197,118 @@ function ImportSettings() {
     blockedUsers_str = settings_str.substring(delimiter+1, settings_str.length);
     temp_scriptSettings = JSON.parse(chatSettings_str);
     temp_blockedUsers = JSON.parse(blockedUsers_str);
-    console.log(chatSettings_str);
-    console.log(blockedUsers_str);
+
+    /* Time to do a lot of checking here. */
+    if ( chatSettings_str === '' || blockedUsers_str === '' ||
+        temp_scriptSettings === undefined || temp_blockedUsers === undefined )
+    {
+      MarkProblem("importExportTextarea", true);
+    }
+    else{
+      ExtractChatPmSettings(temp_scriptSettings);
+      ExtractBlockSettings(temp_blockedUsers);
+      SaveChatSettings(scriptSettings);
+
+      console.log("RPH Tools[ImportSettings]: Importing blocked list", blockedUsers);
+      MarkProblem("importExportTextarea", false);
+      PopulateSettingsDialog();
+    }
   }
   catch (err) {
     console.log('RPH Tools[ImportSettings]: Error importing settings');
+    MarkProblem("importExportTextarea", true);
   }
+}
 
-  /* Time to do a lot of checking here. */
-  if ( chatSettings_str === '' || blockedUsers_str === '' ||
-      temp_scriptSettings === undefined || temp_blockedUsers === undefined )
-  {
-    mark_problem("importExportTextarea", true);
+/****************************************************************************
+* @brief:    Prints out the settings into the main textbox for exporting.
+****************************************************************************/
+function ExportSettings(){
+  var chatSettings_str = JSON.stringify(scriptSettings);
+  var blockedUsers_str = JSON.stringify(blockedUsers);
+  $('textarea#importExportTextarea').val(chatSettings_str + "|" + blockedUsers_str);
+  MarkProblem("importExportTextarea", false);
+}
+
+/****************************************************************************
+* @brief:    Prints out settings in the console.
+****************************************************************************/
+function PrintSettings(){
+  console.log('RPH Tools[SetUpToolsDialog]: Chat settings', scriptSettings);
+  console.log('RPH Tools[SetUpToolsDialog]: Blocked users', blockedUsers);
+}
+
+/****************************************************************************
+* @brief:     Deletes settings.
+* @note:      The user has to press the button twice to delete.
+****************************************************************************/
+function DeleteSettings(){
+  if (settingsDialog.importExport.deleteConfirm === false){
+    $('#deleteSettingsButton').text('Press again to delete');
+    settingsDialog.importExport.deleteConfirm = true;
   }
-  else{
-    scriptSettings = temp_scriptSettings;
-    blockedUsers = [];
-    populateSettingsDialog();
-    snd = new Audio(scriptSettings.ping_url);
-    $('#im-sound').children("audio").attr('src', scriptSettings.pmPingUrl);
-    saveChatSettings(scriptSettings);
+  else if (settingsDialog.importExport.deleteConfirm === true){
+    $('#deleteSettingsButton').text('Delete Settings');
+    settingsDialog.importExport.deleteConfirm = false;
+    localStorage.removeItem("chatSettings");
+    localStorage.removeItem("blockedUsers");
 
-    $('#blockedDropList').find('option').remove().end();
-    for (var i = 0; i < temp_blockedUsers.length; i++) {
-      if (temp_blockedUsers[i] !== "")
-      {
-        blockUserById(temp_blockedUsers[i]);
+    scriptSettings = {
+      "pings"     : "",
+      "ping_url"  : "http://chat.rphaven.com/sounds/boop.mp3",
+      "color"     : "#000",
+      "highlight" : "#FFA",
+      "flags"     : 0,
+      "pmPingUrl" : "http://chat.rphaven.com/sounds/imsound.mp3",
+      "favRooms"  : []
+    };
+    PopulateSettingsDialog();
+  }
+}
+
+/****************************************************************************
+PM processing functions
+****************************************************************************/
+/****************************************************************************
+* @brief Handles incoming PMs.
+*
+* @param data - Data containing the PM.
+****************************************************************************/
+function HandleIncomingPm(data){
+  getUserById(data.to, function(fromUser) {
+    /* Send away message. */
+    if (awayMessages[data.from] !== undefined) {
+      if (awayMessages[data.from].enabled === true) {
+        var awayMsg = awayMessages[data.from].message;
+        awayMessages[data.from].usedPmAwayMsg = true;
+        sendToSocket('pm', {'from':data.from, 'to':data.to, 'msg':awayMsg, 'target':'all'});
       }
     }
-    console.log("RPH Tools[ImportSettings]: Importing blocked list", blockedUsers);
-    mark_problem("importExportTextarea", false);
-  }
-}
-
-/****************************************************************************
- *                              PM FUNCTIONS
- ****************************************************************************/
-/****************************************************************************
- * @brief:    Sets up PM callback functions for PM actions
- ****************************************************************************/
-function setupPMFunctions() {
-  _on('pm', function(data) {
-    getUserById(data.to, function(fromUser) {
-      /* Remove links */
-      if (scriptSettings.flags & 32) {
-        removeRoomLinksInPM();
-      }
-
-      /* Send away message. */
-      if (awayMessages[data.from] !== undefined) {
-        if (awayMessages[data.from].enabled === true) {
-          var awayMsg = awayMessages[data.from].message;
-          awayMessages[data.from].usedPmAwayMsg = true;
-          sendToSocket('pm', {'from':data.from, 'to':data.to, 'msg':awayMsg, 'target':'all'});
-        }
-      }
-    });
-  });
-
-  _on('outgoing-pm', function(data) {
-    getUserById(data.from, function(fromUser) {
-      /* Remove links */
-      if (scriptSettings.flags & 32) {
-        removeRoomLinksInPM();
-      }
-
-      if (awayMessages[data.from] !== undefined) {
-        if (awayMessages[data.from].usedPmAwayMsg === false) {
-          awayMessages[data.from].enabled = false;
-          $('#pmNamesDroplist option').filter(function() {
-            return this.value == data.from;
-          }).css("background-color", "");
-        }
-        awayMessages[data.from].usedPmAwayMsg = false;
-      }
-    });
   });
 }
 
 /****************************************************************************
- *                       CHAT MESSAGE OUT FUNCTIONS
- ****************************************************************************/
+* @brief Handles outgoing PMs.
+*
+* @param data - Data containing the PM.
+****************************************************************************/
+function HandleOutgoingPm(data){
+  getUserById(data.from, function(fromUser) {
+    if (awayMessages[data.from] !== undefined) {
+      if (awayMessages[data.from].usedPmAwayMsg === false) {
+        awayMessages[data.from].enabled = false;
+        $('#pmNamesDroplist option').filter(function() {
+          return this.value == data.from;
+        }).css("background-color", "");
+      }
+      awayMessages[data.from].usedPmAwayMsg = false;
+    }
+  });
+}
+
+/****************************************************************************
+Chat message processing functions
+****************************************************************************/
  /****************************************************************************
  * @brief:    When user joins a room, do the following:
  *            - Set up the .onMessage function for pinging
@@ -1134,31 +1316,31 @@ function setupPMFunctions() {
  *            - Create a room-pair name for the Modding section
  * @param:    room - Room that the user has joined
  ****************************************************************************/
-function doRoomJoinSetup(room) {
+function RoomJoinSetup(room) {
   var thisRoom = getRoom(room.room);
-  var userId = getIdFromChatTab(thisRoom);
+  var userId = GetIdFromChatTab(thisRoom);
 
   thisRoom.onMessage = function (data) {
     var thisRoom = this;
     if ( account.ignores.indexOf(data.userid) !== -1 ) {
       return;
     }
-    postMessage(thisRoom, data);
+    PostMessage(thisRoom, data);
   };
 
-  if ((scriptSettings.flags & 64) > 0) {
-    addNameToUI(thisRoom, userId);
+  if (GetFlagState(RPHT_SHOW_NAMES)) {
+    AddNameToUI(thisRoom, userId);
   }
-  addModFeatures(thisRoom, userId);
+  AddModFeatures(thisRoom, userId);
 }
 
 /****************************************************************************
- * @brief:    Takes a message received in the chat and modifies it if it has
- *            a match for pinging
- * @param:    thisRoom - The room that the message is for.
- * @param:    data - The message for the room
- ****************************************************************************/
-function postMessage(thisRoom, data) {
+* @brief:    Takes a message received in the chat and modifies it if it has
+*            a match for pinging
+* @param:    thisRoom - The room that the message is for.
+* @param:    data - The message for the room
+****************************************************************************/
+function PostMessage(thisRoom, data) {
   getUserById(data.userid, function(User) {
     var timestamp = makeTimestamp(data.time);
     var msg = parseMsg(data.msg);
@@ -1170,36 +1352,28 @@ function postMessage(thisRoom, data) {
       return;
     }
 
-    classes = getClasses(User, thisRoom);
+    classes = GetClasses(User, thisRoom);
 
-    /* Remove any room links. */
-    if (scriptSettings.flags & 32) {
-      var linkMatches = [];
-
-      linkMatches = msg.match(new RegExp('<a class="room-link">(.*?)<\/a>','g'));
-      if (linkMatches !== null) {
-        for(i = 0; i < linkMatches.length; i++) {
-          var prunedMsg = msg.match(new RegExp('>(.*?)<', ''))[1];
-          msg = msg.replace(linkMatches[i], prunedMsg);
-        }
-      }
+    /* Check if this is a valid RNG */
+    if (msg[msg.length-1] === '\u200b'){
+      msg += '&nbsp;<span style="background:#4A4; color: #000;">☑</span>';
     }
 
     /* Add pinging higlights */
     try{
       var testRegex = null;
-      testRegex = matchPing(msg);
+      testRegex = MatchPing(msg);
 
       if (testRegex !== null) {
-        msg = highlightPing(msg, testRegex);
-        highlightRoom(thisRoom);
-        if (snd !== null) {
-            snd.play();
+        msg = HighlightPing(msg, testRegex);
+        HighlightRoom(thisRoom);
+        if (pingSound !== null) {
+            pingSound.play();
           }
       }
     }
     catch (err) {
-      console.log('RPH Tools[postMessage]: I tried pinging D:', err);
+      console.log('RPH Tools[PostMessage]: I tried pinging D:', err);
       msg = parseMsg(data.msg);
     }
 
@@ -1220,8 +1394,8 @@ function postMessage(thisRoom, data) {
     }
 
 
-    if ((scriptSettings.flags & 128) > 0) {
-      $el = appendMessageTextOnly(msgHtml, thisRoom).addClass(classes);
+    if (GetFlagState(RPHT_NO_ROOM_ICONS)) {
+      $el = AppendMessageTextOnly(msgHtml, thisRoom).addClass(classes);
     }
     else{
       $el = thisRoom.appendMessage(msgHtml).addClass(classes);
@@ -1231,11 +1405,11 @@ function postMessage(thisRoom, data) {
 }
 
 /****************************************************************************
- * @brief:    Gets the user name's classes that are applicable to it
- * @param:    User - User of the message
- * @param:    thisRoom - Room that the message is being sent to
- ****************************************************************************/
-function getClasses(User, thisRoom) {
+* @brief:    Gets the user name's classes that are applicable to it
+* @param:    User - User of the message
+* @param:    thisRoom - Room that the message is being sent to
+****************************************************************************/
+function GetClasses(User, thisRoom) {
   var classes = '';
   if ( User.friendOf ) {
     classes += 'friend ';
@@ -1256,12 +1430,12 @@ function getClasses(User, thisRoom) {
 }
 
 /****************************************************************************
- * @brief:    Checks if the message has any ping terms
- * @param:    msg - The message for the chat as a string.
- *
- * @return:   Returns the match or null
- ****************************************************************************/
-function matchPing(msg) {
+* @brief:    Checks if the message has any ping terms
+* @param:    msg - The message for the chat as a string.
+*
+* @return:   Returns the match or null
+****************************************************************************/
+function MatchPing(msg) {
   var pingNames = scriptSettings.pings.split(',');
   var pingFlags = scriptSettings.flags;
   var regexParam = "m";
@@ -1278,7 +1452,7 @@ function matchPing(msg) {
       }
 
       /* Check if search term is not in a link. */
-      if (isInLink(pingNames[i], msg) === false) {
+      if (IsInLink(pingNames[i], msg) === false) {
         var testRegex = new RegExp(regexPattern, regexParam);
         if (msg.match(testRegex)) {
           return testRegex;
@@ -1291,13 +1465,13 @@ function matchPing(msg) {
 }
 
 /****************************************************************************
- * @brief:    Adds highlights to the ping term
- * @param:    msg - Message to be sent to the chat.
- * @param:    testRegex - Regular expression to use to match the term.
- *
- * @param:    Modified msg.
- ****************************************************************************/
-function highlightPing(msg, testRegex) {
+* @brief:    Adds highlights to the ping term
+* @param:    msg - Message to be sent to the chat.
+* @param:    testRegex - Regular expression to use to match the term.
+*
+* @param:    Modified msg.
+****************************************************************************/
+function HighlightPing(msg, testRegex) {
   var pingFlags = scriptSettings.flags;
   var pingColor = scriptSettings.color;
   var pingHighlight =  scriptSettings.highlight;
@@ -1319,10 +1493,10 @@ function highlightPing(msg, testRegex) {
 }
 
 /****************************************************************************
- * @brief:  Adds a highlight to the room's tab
- * @param:  thisRoom - Room where the ping happened.
- ****************************************************************************/
-function highlightRoom(thisRoom) {
+* @brief:  Adds a highlight to the room's tab
+* @param:  thisRoom - Room where the ping happened.
+****************************************************************************/
+function HighlightRoom(thisRoom) {
   //Don't highlight chat tab if the chat is marked as active.
   var testRegex = new RegExp('active', 'im');
   var className = thisRoom.$tabs[0][0].className;
@@ -1355,7 +1529,7 @@ function highlightRoom(thisRoom) {
  * @param:  thisRoom - Room that was entered
  * @param:  userId - ID of the user that entered
  ****************************************************************************/
-function addNameToUI(thisRoom, userId) {
+function AddNameToUI(thisRoom, userId) {
   getUserById(userId, function(User) {
     var tabsLen = thisRoom.$tabs.length;
     var idRoomName = thisRoom.$tabs[tabsLen-1][0].className.split(' ')[2];
@@ -1370,8 +1544,8 @@ function addNameToUI(thisRoom, userId) {
 
     userId = User.props.id;
     userName = User.props.name;
-    classes = getClasses(User, thisRoom);
-    console.log('RPH Tools[addNameToUI]: User class:,', User.props.name, classes);
+    classes = GetClasses(User, thisRoom);
+    console.log('RPH Tools[AddNameToUI]: User class:,', User.props.name, classes);
   });
 }
 
@@ -1380,9 +1554,9 @@ function addNameToUI(thisRoom, userId) {
  * @param:  thisRoom - Room that was entered
  * @param:  userId - ID of the user that entered
  ****************************************************************************/
-function addModFeatures(thisRoom, userId) {
+function AddModFeatures(thisRoom, userId) {
   getUserById(userId, function(User) {
-    var classes = getClasses(User, thisRoom);
+    var classes = GetClasses(User, thisRoom);
     if (classes.indexOf("mod") > -1 ||
         classes.indexOf("owner") > -1 ) {
       var roomNamePair = thisRoom.props.name + ': ' + userName;
@@ -1396,112 +1570,240 @@ function addModFeatures(thisRoom, userId) {
       if (roomNamePairs[roomNameValue] === undefined) {
         roomNamePairs[roomNameValue] = roomNameObj;
         $('#roomModSelect').append('<option value="' + roomNameValue + '">' + roomNamePair + '</option>');
-        console.log("RPH Tools[addModFeatures]: Added room mod pair", roomNamePairs);
+        console.log("RPH Tools[AddModFeatures]: Added room mod pair", roomNamePairs);
       }
     }
   });
 }
-/****************************************************************************
- *                          UTILITY FUNCTIONS
- ****************************************************************************/
- /****************************************************************************
-  * @brief Tests the ping URL to make sure it ends in .wav, otherwise use
-  *        the default ping URL (not sure if .mp3 and the like are supported)
-  *
-  * @param PingURL - URL to test
-  ****************************************************************************/
- function validateUrl(PingURL) {
-     var match = false;
-     var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-     var pingExt = PingURL.slice( (PingURL.length-4), (PingURL.length));
 
-     if (PingURL === '')
-     {
-       match = true;
-     }
-     else if (regexp.test(PingURL) === true)
-     {
-       if (pingExt == ".wav" || pingExt == ".ogg" || pingExt == ".mp3") {
-         match = true;
+/****************************************************************************
+*                          UTILITY FUNCTIONS
+****************************************************************************/
+/****************************************************************************
+* @brief Initializes the data structures and initial event handlers for the
+*        main dialog.
+****************************************************************************/
+function InitSettingsDialog(){
+ settingsDialog.dialog = {
+   button: $('#top a.pings'),
+   form: $('#settingsBox'),
+   state: false
+ };
+
+ settingsDialog.chat = {
+   button: $('#chatSettingsHeader'),
+   form: $('#chatSettingsForm'),
+   state: false
+ };
+
+ settingsDialog.pm = {
+   button: $('#pmSettingsHeader'),
+   form: $('#pmSettingsForm'),
+   state: false
+ };
+
+ settingsDialog.rng = {
+   button: $('#rngHeader'),
+   form: $('#rngForm'),
+   state: false
+ };
+
+ settingsDialog.blocking = {
+   button: $('#blockHeader'),
+   form: $('#blockForm'),
+   state: false
+ };
+
+ settingsDialog.modding = {
+   button: $('#moddingHeader'),
+   form: $('#moddingForm'),
+   state: false
+ };
+
+ settingsDialog.importExport = {
+   button: $('#importExportHeader'),
+   form: $('#importExportForm'),
+   state: false,
+   deleteConfirm: false
+ };
+
+ settingsDialog.about = {
+   button: $('#aboutHeader'),
+   form: $('#aboutHelpForm'),
+   state: false
+ };
+
+ settingsDialog.dialog.button.click(function() {
+   if (settingsDialog.dialog.state === false)
+   {
+     settingsDialog.dialog.form.show();
+     settingsDialog.dialog.state = true;
+     ReblockList();
+   }
+   else
+   {
+     if (settingsChanged === true) {
+       console.log('RPH Tools[SetUpToolsDialog]: Chat settings were changed', scriptSettings);
+       settingsChanged = false;
+       if (validSettings === true) {
+         SaveChatSettings(scriptSettings);
        }
      }
-     return match;
- }
-
- /****************************************************************************
-  * @brief:    Tests the highlight color to make sure it's valid
-  * @param:    HighlightColor - String representation of the color.
-  *
-  * @return:   Returns boolean if the color matches the regex pattern.
-  ****************************************************************************/
- function validateColor(HighlightColor) {
-   var pattern = new RegExp(/(^#[0-9A-Fa-f]{6}$)|(^#[0-9A-Fa-f]{3}$)/i);
-   return pattern.test(HighlightColor);
- }
-
- /****************************************************************************
-  * @brief:    Tests the color range of the color to ensure its valid
-  * @param:    TextColor - String representation of the color.
-  *
-  * @return:   True if the color is within range, false otherwise.
-  ****************************************************************************/
- function validateColorRange(TextColor) {
-   var rawHex = TextColor.substring(1,TextColor.length);
-   var red = 255;
-   var green = 255;
-   var blue = 255;
-
-   /* If the color text is 3 characters, limit it to #DDD */
-   if (rawHex.length == 3) {
-     red = parseInt(rawHex.substring(0,1), 16);
-     green = parseInt(rawHex.substring(1,2), 16);
-     blue = parseInt(rawHex.substring(2,3), 16);
-
-     if ((red <= 13) && (green <= 13) && (blue <= 13)) {
-       return true;
+     else{
+       console.log('RPH Tools[SetUpToolsDialog]: No chat settings were changed');
      }
+     settingsDialog.dialog.form.hide();
+     settingsDialog.dialog.state = false;
+     $('#deleteSettingsButton').text('Delete Settings');
+     settingsDialog.importExport.deleteConfirm = false;
    }
-   /* If the color text is 6 characters, limit it to #D2D2D2 */
-   else if (rawHex.length == 6) {
-     red = parseInt(rawHex.substring(0,2), 16);
-     green = parseInt(rawHex.substring(2,4), 16);
-     blue = parseInt(rawHex.substring(4,6), 16);
-     if ((red <= 210) && (green <= 210) && (blue <= 210)) {
-       return true;
-     }
-   }
+ });
+}
 
-   console.log('RPH Tools[validateColorRange]: Color check failed', rawHex, red, green, blue);
-   return false;
- }
+/****************************************************************************
+* @brief Processes account events.
+*
+* @param account - Data blob countaining the user's account.
+****************************************************************************/
+function ProcessAccountEvt(account){
+  var users = account.users;
+  ClearUsersDropLists();
+  for(i = 0; i < users.length; i++) {
+    AddUserToDroplist(users[i]);
+  }
+  console.log('RPH Tools[_on.accounts]: Account data blob received, adding users', users);
+}
 
- /****************************************************************************
-  * @brief Adds usernames to droplists.
-  * @param user_id - ID of username
-  ****************************************************************************/
- function addUserToDroplist(user_id) {
-   getUserById(user_id, function(User) {
-     $('#pmNamesDroplist').append('<option value="' + user_id + '">' +
-        User.props.name + '</option>');
-     $('#userColorDroplist').append('<option value="' + user_id + '">' +
-       User.props.name + '</option>');
-   });
- }
+/****************************************************************************
+* @brief Processes ignores events.
+*
+* @param data - Data containing the user being ignored.
+****************************************************************************/
+function ProcessIngoresEvt(data){
+  console.log("RPH Tools[_on.ignores]: Blocking user from ignore button", data.ids[0]);
+  if (data.ids[0] !== undefined){
+    BlockUserById(data.ids[0]);
+  }
+}
 
- /****************************************************************************
-  * @brief Clears droplists.
-  ****************************************************************************/
- function clearUsersDropLists(){
-   $('#pmNamesDroplist').empty();
-   $('#userColorDroplist').empty();
- }
+/****************************************************************************
+* @brief Toggles one of the settings flags.
+*
+* @param flag - Flag mask to toggle.
+****************************************************************************/
+function ToggleFlag(flag){
+ scriptSettings.flags ^= flag;
+ settingsChanged = true;
+}
+
+/****************************************************************************
+* @brief Get the state of the flag
+*
+* @param flag - Flag mask to check.
+****************************************************************************/
+function GetFlagState(flag){
+  return ((scriptSettings.flags & flag) > 0);
+}
+
+/****************************************************************************
+* @brief Tests the ping URL to make sure it ends in .wav, otherwise use
+*        the default ping URL (not sure if .mp3 and the like are supported)
+*
+* @param PingURL - URL to test
+****************************************************************************/
+function ValidateUrl(PingURL) {
+  var match = false;
+  var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+  var pingExt = PingURL.slice( (PingURL.length-4), (PingURL.length));
+
+  if (PingURL === '') {
+    match = true;
+  }
+  else if (regexp.test(PingURL) === true) {
+    if (pingExt == ".wav" || pingExt == ".ogg" || pingExt == ".mp3") {
+      match = true;
+    }
+  }
+  return match;
+}
+
+/****************************************************************************
+* @brief:    Tests the highlight color to make sure it's valid
+* @param:    HighlightColor - String representation of the color.
+*
+* @return:   Returns boolean if the color matches the regex pattern.
+****************************************************************************/
+function ValidateColor(HighlightColor) {
+  var pattern = new RegExp(/(^#[0-9A-Fa-f]{6}$)|(^#[0-9A-Fa-f]{3}$)/i);
+  return pattern.test(HighlightColor);
+}
+
+/****************************************************************************
+* @brief:    Tests the color range of the color to ensure its valid
+* @param:    TextColor - String representation of the color.
+*
+* @return:   True if the color is within range, false otherwise.
+****************************************************************************/
+function ValidateColorRange(TextColor) {
+  var rawHex = TextColor.substring(1,TextColor.length);
+  var red = 255;
+  var green = 255;
+  var blue = 255;
+
+  /* If the color text is 3 characters, limit it to #DDD */
+  if (rawHex.length == 3) {
+    red = parseInt(rawHex.substring(0,1), 16);
+    green = parseInt(rawHex.substring(1,2), 16);
+    blue = parseInt(rawHex.substring(2,3), 16);
+
+    if ((red <= 13) && (green <= 13) && (blue <= 13)) {
+      return true;
+    }
+  }
+  /* If the color text is 6 characters, limit it to #D2D2D2 */
+  else if (rawHex.length == 6) {
+    red = parseInt(rawHex.substring(0,2), 16);
+    green = parseInt(rawHex.substring(2,4), 16);
+    blue = parseInt(rawHex.substring(4,6), 16);
+    if ((red <= 210) && (green <= 210) && (blue <= 210)) {
+      return true;
+    }
+  }
+
+  console.log('RPH Tools[ValidateColorRange]: Color check failed', rawHex, red, green, blue);
+  return false;
+}
+
+/****************************************************************************
+* @brief Adds usernames to droplists.
+* @param user_id - ID of username
+****************************************************************************/
+function AddUserToDroplist(user_id) {
+  getUserById(user_id, function(User) {
+    $('#pmNamesDroplist').append('<option value="' + user_id + '">' +
+      User.props.name + '</option>');
+    $('#userColorDroplist').append('<option value="' + user_id + '">' +
+      User.props.name + '</option>');
+    $('#favUserList').append('<option value="' + user_id + '">' +
+      User.props.name + '</option>');
+  });
+}
+
+/****************************************************************************
+* @brief Clears droplists.
+****************************************************************************/
+function ClearUsersDropLists(){
+  $('#pmNamesDroplist').empty();
+  $('#userColorDroplist').empty();
+  $('#favUserList').empty();
+}
 
 /****************************************************************************
  * @brief:    Marks if there's a problem or not.
  * @param:    element - element ID that has the problem
  * @param:    mark - true or false if it has a problem
  ****************************************************************************/
-function mark_problem(element, mark) {
+function MarkProblem(element, mark) {
   if (mark === true) {
     $("#"+element).css('background', '#FF7F7F');
   }
@@ -1517,45 +1819,16 @@ function mark_problem(element, mark) {
  *
  * @return:   True or false if there's a match.
  ****************************************************************************/
-function isInLink(searchTerm, msg) {
+function IsInLink(searchTerm, msg) {
   var regexp = new RegExp('href=".*?' + searchTerm + '.*?"', '');
   return regexp.test(msg);
 }
 
 /****************************************************************************
- * @brief:    Removes links in an incoming PM
- * @note:     This only works on the bottom-most <p> tag.
- ****************************************************************************/
-function removeRoomLinksInPM() {
-  var messages = $('div#pm-msgs.inner').find('p');
-  var linkMatches = [];
-
-  /* Since this covers all of the p tags in the PM window, limit the amount
-     of searching done to the last 50 */
-  if (messages.length > 50) {
-    messages = messages.slice(messages.length-51,messages.length);
-  }
-
-  for(msg_idx = 0; msg_idx < messages.length; msg_idx++) {
-    var html = messages[msg_idx].innerHTML;
-
-    linkMatches = html.match(new RegExp('<a class="room-link">(.*?)<\/a>','g'));
-    if (linkMatches !== null) {
-      for(i = 0; i < linkMatches.length; i++) {
-        var prunedMsg = linkMatches[i].match(new RegExp('>(.*?)<', ''))[1];
-        html = html.replace(linkMatches[i], prunedMsg);
-      }
-
-      messages[msg_idx].innerHTML = html;
-    }
-  }
-}
-
-/****************************************************************************
- * @brief:    Gets the user's ID from the chat tab (it's in the class)
- * @param:    thisRoom - Room to get the ID from
- ****************************************************************************/
-function getIdFromChatTab(thisRoom) {
+* @brief:    Gets the user's ID from the chat tab (it's in the class)
+* @param:    thisRoom - Room to get the ID from
+****************************************************************************/
+function GetIdFromChatTab(thisRoom) {
   var tabsLen = thisRoom.$tabs.length;
   var className = thisRoom.$tabs[tabsLen-1][0].className;
   var charID = className.match(new RegExp(' [0-9]+', ''))[0];
@@ -1564,14 +1837,14 @@ function getIdFromChatTab(thisRoom) {
 }
 
 /****************************************************************************
- * @brief     Appends message to a room without adding an image icon
- * @param     html - HTML to add to the room.
- * @param     thisRoom - Object to the room receiving the message.
- *
- * @note      This was modified from RPH's original code, which is not covered
- *            by this license.
- ****************************************************************************/
-function appendMessageTextOnly(html, thisRoom) {
+* @brief     Appends message to a room without adding an image icon
+* @param     html - HTML to add to the room.
+* @param     thisRoom - Object to the room receiving the message.
+*
+* @note      This was modified from RPH's original code, which is not covered
+*            by this license.
+****************************************************************************/
+function AppendMessageTextOnly(html, thisRoom) {
   var $el = $('<div>\n'+html+'\n</div>').appendTo( thisRoom.$el );
   var extra = 5; //add more if near the bottom
   if ( thisRoom.$el[0].scrollHeight - thisRoom.$el.scrollTop() < 50 ) {
@@ -1585,3 +1858,186 @@ function appendMessageTextOnly(html, thisRoom) {
 
   return $el;
 }
+
+/****************************************************************************
+* @brief      In an array of object, return the first instance where a key
+*             matches a value.
+*
+* @param      objArray - Array of objects
+* @param      key - Key to look for
+* @param      value - Value of the key to match
+* @return     Index of the first instance where the key matches the value, -1
+*             otherwise.
+****************************************************************************/
+function ArrayObjectIndexOf (objArray, key, value) {
+  for(var i = 0; i < objArray.length; i++){
+    if (objArray[i][key] === value){
+      return i;
+    }
+  }
+  return -1;
+}
+
+/****************************************************************************
+Chat room and PM settings functions
+****************************************************************************/
+/****************************************************************************
+* @brief:   Updates a chat or PM setting.
+* @param:   settingId - ID of which setting this
+* @param:   pingSetting - Name of setting in scriptSettings to update.
+****************************************************************************/
+function UpdateChatPmSetting(settingId, pingSetting){
+  var validInput = false;
+  var input = $('#'+settingId).val();
+
+  switch(pingSetting){
+    case "ping_url":
+    case "pmPingUrl":
+      validInput = ValidateUrl(input);
+      break;
+
+    case "color":
+    case "highlight":
+      validInput = ValidateColor(input);
+      break;
+  }
+
+  if (validInput === true){
+    scriptSettings[pingSetting] = input;
+
+    switch (pingSetting){
+      case "ping_url":
+        pingSound = new Audio(scriptSettings.ping_url);
+        break;
+      case "pmPingUrl":
+        $('#im-sound').children("audio").attr('src', input);
+        break;
+    }
+
+    MarkProblem(settingId, false);
+    settingsChanged = true;
+    validSettings = true;
+  }
+  else {
+    MarkProblem(settingId, true);
+    validSettings = false;
+  }
+}
+
+/****************************************************************************
+* @brief:   Extracts the data from locally stored settings.
+* @param:   settingsObj - Object that holds the stored settings.
+****************************************************************************/
+function ExtractChatPmSettings(settingsObj){
+  for(var setting in scriptSettings){
+    if (settingsObj[setting] !== undefined){
+      scriptSettings[setting] = settingsObj[setting];
+    }
+  }
+
+  pingSound = new Audio(scriptSettings.ping_url);
+  $('#im-sound').children("audio").attr('src', scriptSettings.pmPingUrl);
+  console.log("RPH Tools[InitRphTools]: Loaded chat settings: ", scriptSettings);
+}
+
+/****************************************************************************
+* @brief:   Extracts the data from locally stored block users list.
+* @param:   blockedUsersStorage - Object that holds the stored list.
+****************************************************************************/
+function ExtractBlockSettings(blockedUsersStorage){
+  console.log("RPH Tools[InitRphTools]: Loaded blocked users: ", blockedUsers);
+
+  for (var i = 0; i < blockedUsersStorage.length; i++) {
+    console.log("RPH Tools[InitRphTools]: Blocking user ", blockedUsersStorage[i]);
+    if (blockedUsersStorage[i] !== "") {
+      var user = blockedUsersStorage[i];
+      BlockUserById(user.id);
+    }
+  }
+}
+
+/****************************************************************************
+* @brief:    Saves the chat and PM settings into local storage
+****************************************************************************/
+function SaveChatSettings() {
+  localStorage.setItem("chatSettings", JSON.stringify(scriptSettings));
+  console.log("RPH Tools[SaveChatSettings]: Saving chat settings... ", localStorage.getItem("chatSettings"));
+}
+
+/****************************************************************************
+* @brief:   Loads the settings from local storage.
+****************************************************************************/
+function LoadSettings(){
+  if (typeof(storage) != "undefined") {
+    if (localStorage.getItem("chatSettings") !== null) {
+      var storedSettings = JSON.parse(localStorage.getItem("chatSettings"));
+      ExtractChatPmSettings(storedSettings);
+    }
+
+    if (localStorage.getItem("blockedUsers") !== null) {
+      var blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
+      ExtractBlockSettings(blockedUsers);
+    }
+  }
+}
+
+/****************************************************************************
+* @brief:   Saves the blocked users list into local storage.
+****************************************************************************/
+function SaveBlockSettings() {
+  localStorage.setItem("blockedUsers", JSON.stringify(blockedUsers));
+  console.log("RPH Tools[SaveBlockSettings]: Saving blocked users (storage, session)",
+               localStorage.getItem("blockedUsers"), blockedUsers);
+}
+/****************************************************************************
+ * @brief     Generates a hash value for a string
+ *
+ * @note      This was modified from https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
+ ****************************************************************************/
+String.prototype.hashCode = function() {
+  var hash = 0, i, chr, len;
+  if (this.length === 0) return hash;
+  for (i = 0, len = this.length; i < len; i++) {
+    chr   = this.charCodeAt(i);
+    hash  = ((hash << 31) - hash) + chr;
+    hash |= 0; // Convert to 32bit integer
+  }
+  return hash;
+};
+
+/****************************************************************************
+ * @brief:  Creating a new prototype for PM messaging, to make image icons
+ *          not show up if desired.
+ ****************************************************************************/
+Pm.prototype.appendMsg = function(html){
+  var $el = $(html);
+  this.$msgs.append($el);
+  if( this.$typing ){
+    $el.insertBefore( this.$typing );
+  }
+  this.$msgs.animate({scrollTop: '+='+($el.outerHeight()+18)}, 250);
+
+  if (GetFlagState(RPHT_NO_PM_ICONS) === false){
+    $el.find('.img-wrapper').each(function(){
+      var $this = $(this);
+      var url = $this.attr('href');
+      var $checker = $('<img src="'+url+'"/>').hide().appendTo('body');
+      $checker.load(function(){
+        if( $checker.height() <= 90 && $checker.width() <= 120 ){
+          $this.replaceWith('<img src="'+url+'" class="smily" />');
+        } else {
+          $this.before($('<a href="#" />').text('Open in dialog box').bind('click', function(ev){
+              ev.preventDefault();
+              var matched = html.match(/([http|https]+:\/\/\S*\.(jpg|jpeg|png|gif))/i)[0];
+              $('<div class="innerbg smallBorders" style="padding:0 2px;height:100%;"><img src="'+matched+'" /></div>').dialog({
+                bgiframe: true, title: 'Image', width: $checker.width()
+              });
+            }).add(
+              $('<span />').text(' - ')
+            )
+          );
+        }
+      });
+    });
+  }
+};
