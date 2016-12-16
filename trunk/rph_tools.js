@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name       RPH Tools
+// @name       RPH Tools Test
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    2.3.5
+// @version    2.3.6
 // @description Adds extended settings to RPH
 // @match      http://chat.rphaven.com
 // @copyright  (c)2014 shuffyiosys@github
@@ -56,9 +56,14 @@ var scriptSettings = {
   "flags"     : 0,
   "pmPingUrl" : "http://chat.rphaven.com/sounds/imsound.mp3",
   "favRooms"  : [],
+  "session"   : false,
+  "alwaysJoin": true,
+  "strictUrl" : false,
 };
 
 var blockedUsers = [];
+
+var roomSession = [];
 
 /* Object for dialog box */
 var settingsDialog = {};
@@ -75,7 +80,9 @@ var roomNamePairs = {};
 
 var startupTimer = null;
 
-var versString = 'RPH Tools 2.3.5';
+var versString = 'RPH Tools 2.3.6';
+
+var waitForDialog = true;
 
 var html =
   '<style>' +
@@ -114,9 +121,11 @@ var html =
         '<input style="width: 40px;" type="checkbox" id="pingCaseSense" name="pingCaseSense">Case sensitive' +
         '<br /><br />' +
         '<p style="border-bottom: 2px solid #EEE;">' +
-          '<span style="background: #333; position: relative; top: 0.7em;"><strong>Auto Join Favorite Rooms</strong>&nbsp; </span>' +
+          '<span style="background: #333; position: relative; top: 0.7em;"><strong>Auto Joining</strong>&nbsp; </span>' +
         '</p>' +
-        '<div class="rpht-block"><label>Enable Auto Join:   </label><input type="checkbox" id="favEnable" name="favEnable"></div>' +
+        '<div class="rpht-block"><label>Always auto join:     </label><input type="checkbox" id="alwaysAutoJoin" name="alwaysAutoJoin" checked></div>' +
+        '<div class="rpht-block"><label>Room Sessioning:      </label><input type="checkbox" id="roomSessioning" name="roomSessioning"></div>' +
+        '<div class="rpht-block"><label>Auto Join favorits:   </label><input type="checkbox" id="favEnable" name="favEnable"></div>' +
         '<div class="rpht-block"><label>Username: </label><select style="width: 300px;" id="favUserList"></select></div>'+
         '<div class="rpht-block"><label>Room:     </label><input style="width: 370px;" type="text" id="favRoom" name="favRoom"></div>' +
         '<div class="rpht-block"><label>Password: </label><input style="width: 370px;" type="text" id="favRoomPw" name="favRoomPw"></div>' +
@@ -131,7 +140,7 @@ var html =
         '<div class="rpht-block"><label>Chat history: </label><input style="width: 300px;" type="number" id="chatHistory" name="chatHistory" max="65535" min="10" value="300"><br /><br /></div>' +
         '<div class="rpht-block"><label>No image icons in chat</label><input style="margin-right: 10px;" type="checkbox" id="imgIconDisable" name="imgIconDisable"></div>' +
         '<div class="rpht-block"><label>Show username in tabs & textbox (requires rejoin)</label><input style="margin-right: 10px;" type="checkbox" id="showUsername" name="showUsername"></div>' +
-        /*'<div class="rpht-block"><label>Cleanup on reconnect</label><input style="margin-right: 10px;" type="checkbox" id="cleanupOnReconnect" name="cleanupOnReconnect"></div>' +*/
+        '<div class="rpht-block"><label>Strict URL parser</label><input style="margin-right: 10px;" type="checkbox" id="strictUrl" name="strictUrl"></div>' +
       '</div>' +
       '<br />' +
       /* PM Settings */
@@ -269,7 +278,7 @@ var rpht_css = '<style>' +
   ;
 
 /* If this doesn't print, something happened with the global vars */
-console.log('RPH Tools start');
+console.log(versString + ' start');
 /****************************************************************************
  *                          MAIN FUNCTIONS
  ****************************************************************************/
@@ -289,16 +298,16 @@ $(function() {
     ProcessIngoresEvt(data);
   });
 
-  chatSocket.on('confirm-room-join', function(data) {
-    RoomJoinSetup(data);
-  });
-
   _on('pm', function(data) {
     HandleIncomingPm(data);
   });
 
   _on('outgoing-pm', function(data) {
     HandleOutgoingPm(data);
+  });
+
+  chatSocket.on('confirm-room-join', function(data) {
+    RoomJoinSetup(data);
   });
 
   chatSocket.on('user-kicked', function(data){
@@ -332,11 +341,12 @@ function InitRphTools(){
   $('head').append(rpht_css);
   InitSettingsDialog();
   LoadSettings();
-  setInterval(ReblockList, 120*1000);
+  setInterval(RepeatTasks, 30*1000);
   ReblockList();
 
   console.log('RPH Tools[InitRphTools]: Init complete, setting up dialog box');
   SetUpToolsDialog();
+
 }
 
 /****************************************************************************
@@ -356,7 +366,7 @@ function SetUpToolsDialog() {
   ImportExportSetup();
   AboutFormSetup();
 
-  startupTimer = setInterval(DoDelayedSetup, 5*1000);
+  startupTimer = setInterval(DoDelayedSetup, 2*1000);
 
   console.log('RPH Tools[SetUpToolsDialog]: Dialog box setup complete. RPH Tools is now ready.');
 }
@@ -423,6 +433,21 @@ function ChatSettingsSetup() {
   $('#favEnable').click(function(){
     ToggleFlag(RPHT_AUTO_JOIN);
     SaveChatSettings();
+  });
+
+  $('#roomSessioning').click(function(){
+      scriptSettings.session = ($('#roomSessioning:checked').length > 0);
+      settingsChanged = true;
+  });
+
+  $('#alwaysAutoJoin').click(function(){
+      scriptSettings.alwaysJoin = ($('#alwaysAutoJoin:checked').length > 0);
+      settingsChanged = true;
+  });
+
+  $('#strictUrl').click(function(){
+     scriptSettings.strictUrl = ($('#strictUrl:checked').length > 0);
+     settingChanged = true;
   });
 
   $('#favAdd').click(function(){
@@ -726,6 +751,9 @@ function PopulateSettingsDialog() {
   $('input#pmIconsDisable').prop("checked", GetFlagState(RPHT_NO_PM_ICONS));
   $('input#showUsername').prop("checked", GetFlagState(RPHT_SHOW_NAMES));
   $('inputimgIconDisable').prop("checked", GetFlagState(RPHT_NO_ROOM_ICONS));
+  $('#roomSessioning').prop("checked", scriptSettings.session);
+  $('#alwaysAutoJoin').prop("checked", scriptSettings.alwaysJoin);
+  $('#strictUrl').prop("checked", scriptSettings.strictUrl);
 
   for(var i = 0; i < scriptSettings.favRooms.length; i++){
     var favRoomObj = scriptSettings.favRooms[i];
@@ -733,6 +761,10 @@ function PopulateSettingsDialog() {
       '<option value="' + favRoomObj._id + '">' +
       favRoomObj.user + ": " + favRoomObj.room + '</option>'
     );
+  }
+
+  if (scriptSettings.alwaysJoin === true){
+      waitForDialog = false;
   }
 
   if (scriptSettings.favRooms.length >= 10){
@@ -1076,7 +1108,6 @@ function RemoveFromBlockList(){
 * @brief:   Blocks everyone on the list. Used to refresh blocking.
 ****************************************************************************/
 function ReblockList(){
-  console.log('RPH Tools[ReblockList]: reblocking everyone');
   for(var i = 0; i < blockedUsers.length; i++){
     BlockUser(blockedUsers[i].id);
   }
@@ -1265,6 +1296,7 @@ function DeleteSettings(){
     settingsDialog.importExport.deleteConfirm = false;
     localStorage.removeItem("chatSettings");
     localStorage.removeItem("blockedUsers");
+    localStorage.removeItem("lastSession");
 
     scriptSettings = {
       "pings"     : "",
@@ -1349,6 +1381,12 @@ function RoomJoinSetup(room) {
   ResizeChatTabs();
   if (jQuery._data(window, "events").resize === undefined){
     $( window ).resize(ResizeChatTabs);
+  }
+
+  if(ArrayObjectIndexOf(roomSession, 'roomname', room.room) === -1){
+      var tempData = {'roomname': room.room, 'user': room.userid};
+      roomSession.push(tempData);
+      localStorage.setItem("lastSession", JSON.stringify(roomSession));
   }
 }
 
@@ -1710,8 +1748,8 @@ function ProcessIngoresEvt(data){
 * @param flag - Flag mask to toggle.
 ****************************************************************************/
 function ToggleFlag(flag){
- scriptSettings.flags ^= flag;
- settingsChanged = true;
+    scriptSettings.flags ^= flag;
+    settingsChanged = true;
 }
 
 /****************************************************************************
@@ -1998,6 +2036,11 @@ function LoadSettings(){
       var blockedUsers = JSON.parse(localStorage.getItem("blockedUsers"));
       ExtractBlockSettings(blockedUsers);
     }
+
+    if (localStorage.getItem("lastSession") !== null){
+        roomSession = JSON.parse(localStorage.getItem("lastSession"));
+        console.log('RPH Tools[LoadSettings]: Room session:',roomSession);
+    }
   }
 }
 
@@ -2067,9 +2110,59 @@ Pm.prototype.appendMsg = function(html){
 *           actually in chat.
 ****************************************************************************/
 function DoDelayedSetup(){
-  if (GetFlagState(RPHT_AUTO_JOIN) === true){
-      JoinFavoriteRooms();
-  }
+    if (roomnames.length > 0){
+        if (waitForDialog === true){
+            $('<div id="rpht-autojoin" class="inner">' +
+              '<p>Autojoining or restoring session.</p>' +
+              '<p>Press "Cancel" to stop autojoin or session restore.</p>' +
+              '</div>').dialog({
+                open: function(event, ui){
+                    setTimeout(function(){$('#rpht-autojoin').dialog('close');}, 10*1000);
+                },
+                buttons: {
+                    Cancel: function() {
+                        clearTimeout(startupTimer);
+                        $(this).dialog("close");
+                  }
+               },
+           }).dialog('open');
+
+            waitForDialog = false;
+            clearTimeout(startupTimer);
+            startupTimer = setTimeout(DoDelayedSetup, 10*1000);
+        }
+        else{
+            if (GetFlagState(RPHT_AUTO_JOIN) === true && roomnames.length > 0){
+                JoinFavoriteRooms();
+            }
+
+            if (scriptSettings.session){
+                for(var i=0; i < roomSession.length; i++){
+                    var room = roomSession[i];
+                    if(ArrayObjectIndexOf(scriptSettings.favRooms, 'room', room.roomname) === -1){
+                        chatSocket.emit('join', {name:room.roomname, userid:room.user});
+                    }
+                }
+            }
+            clearTimeout(startupTimer);
+        }
+
+    }
+}
+
+function RepeatTasks(){
+    if (scriptSettings.session){
+        var tempSession = [];
+        for(var i=0; i < rph.roomsJoined.length; i++){
+            var roomname = rph.roomsJoined[i].roomname;
+            if(ArrayObjectIndexOf(roomSession, 'roomname', roomname) !== -1){
+                tempSession.push(rph.roomsJoined[i]);
+            }
+        }
+        localStorage.setItem("lastSession", JSON.stringify(tempSession));
+    }
+
+    ReblockList();
 }
 
 /****************************************************************************
@@ -2099,6 +2192,9 @@ function ResizeChatTabs(){
 }
 
 function parseMsg_rpht(msg){
+  var regex_html_loose = /((ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?|^([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+.*)$)/gi;
+  var regex_html_strict = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi;
+  var regex_in_use = (scriptSettings.strictUrl ? regex_html_strict : regex_html_loose);
   msg = msg.replace(/</g, '&lt;');
   msg = msg.replace(/>/g, '&gt;');
   msg = msg.replace(/\n/g, '<br />');
@@ -2114,21 +2210,15 @@ function parseMsg_rpht(msg){
       return "<em>" + $('<div>'+p1+'</div>').text() + "</em>";
     }
   });
-  msg = msg.replace(/((ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?|^([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+.*)$)/gi,
+
+  msg = msg.replace(regex_in_use,
     function(url){
       var full_url = url;
-      var extra = '';
       if( !full_url.match('^https?:\/\/') ) {
         full_url = 'http://' + full_url;
       }
-      if( url.match(/\.(jpg|jpeg|png|gif)/i) ){
-        extra = 'class="img-wrapper"';
-      }
-      else if( url.match(/\S*youtube\.com\S*v=([\w-]+)/i) ){
-        extra = 'class="vid-wrapper"';
-      }
-      return '<a href="' + $('<div>'+full_url+'</div>').text() + '" target="_blank" '+extra+'>' + $('<div>'+url+'</div>').text() + '</a>';
+      return '<a href="' + $('<div>'+full_url+'</div>').text() + '" target="_blank">' + $('<div>'+url+'</div>').text() + '</a>';
     });
 
   return msg;
-};
+}
