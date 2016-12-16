@@ -23,8 +23,6 @@ Go to the [Openuser JS site](https://openuserjs.org/scripts/shuffyiosys/RPH_Tool
 
 ***
 #Features
-![enter image description here](http://i.imgur.com/qI622iT.png "Screen shot the settings")
-
 RPH Tools is a user script that adds additional features into RPH. These features were implemented to either enrich the user's experience to the website or to make certain commands easier to issue. The list of features is pretty long, so here it is in a convenient list form!
 
 ### General
@@ -170,88 +168,124 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ***
 #Version History
-2.2.0 - 12/05/2015
+**12/15/2016**
+- Updated the blocking mechanism.
+- Added a custom chat message parser.
+
+**06/25/2016 (2.3.4)**
+- Redid the chat tab scrolling feature so it creates a horizontal scroll rather than a vertical scroll, as there were cases where the chat tabs could break on a vertical scroll.
+
+**06/21/2016 (2.3.3)**
+- Added a feature that when entering so many rooms that the chat tabs overflow, a scroll bar will appear so you can scroll through the other tabs.
+
+**04/24/2016 (2.3.2a)**
+- Made the pop up only show for the intended user.
+
+**2.3.2**
+- When you are kicked or banned from a room while in it, a pop-up shows up that shows which room you were evicted from and the reason.
+- Added a min and max range indicator on the generic RNG with the result.
+
+**02/04/2016 (2.3.1a)**
+- Fixed a problem where the settings won't be saved when adding more names to ping or updating PM settings
+- Fixed a problem where PM audio pings don't work.
+
+**02/01/2016 (2.3.0)**
+- Re-released 2.3.0 after much needed testing.
+- Separated the chat and PM settings into their own sections
+- Added a function to auto join rooms on login.
+- Added a button in the Modding section to reset the chat's password if you forget it.
+- Renamed "Import/Export" to "Script Settings"
+- Added a button to delete chat and PM settings in the "Script Settings" section
+
+**01/21/2016**
+- Reverted script to 2.2.1 pending issues to be resolved.
+
+**01/20/2016: 2.3.0**
+- Separated the chat and PM settings into their own sections
+- Added a function to auto join rooms on login.
+
+**2.2.0 - 12/05/2015**
 - All console prints use "RPH Tools [<function>]:"
 - Removed flood and clone detection, as RPH addressed these.
 - Redid the HTML such that it's now uniform and lines up properly.
 - Changed "No room links" to "No image icons in PM", as room link removal was done in RPH and this had a side effect of removing image icons in PM too. However, the internal name is still kept for compatibility purposes.
 
-2.1.4 - 12/03/2015
+**2.1.4 - 12/03/2015**
 - Fixed an issue where RPH would block "undefined" at the start of the chat if the user's block list was empty, which would cause RPH Tools to save an empty block list.
   - RPH Tools checks if RPH is trying to block "undefined"
   - RPH Tools copies what's saved in the block list immediately into the main list and issues a block using UserChangeIgnore instead of blockUserById.s
   - RPH Tools blocks the entire list after a minute of launching or if the user opens up the dialog to force blocking.
 - RPH Tools ignores RPH's unblock event to prevent the client from randomly unblocking (if possible)
 
-2.1.2 - 11/16/2015
+**2.1.2 - 11/16/2015**
 - Added the ability to use a custom sound for PM notifications.
 - Added a mute option for PM sounds.
 
-2.1.0 - 06/26/2015
+**2.1.0 - 06/26/2015**
  - Added an option to show dice roll totals.
 
-2.0.3 - 05/24/2015
+**2.0.3 - 05/24/2015**
 - Showing your character name in the tab and text box is switchable.
 
-2.0.2 - 05/07/2015
+**2.0.2 - 05/07/2015**
 - Fixed how room links are removed from PMs. This won't muck with regular links anymore. It also has a side effect of removing image icons from PMs.
 
-2.0.1 - 03/14/2015
+**2.0.1 - 03/14/2015**
 - ~~Added cloning detection~~
 - ~~Fixed how RPH Tools handles the account data blob to prevent it from populating dropdown lists in the event the PM system restarts~~
 - Fixed an issue where if you input an invalid text color, the red highlight doesn't go away. It does now when the color is valid.
 - Added a "Print settings" button in "About/Help". This will dump the settings of RPH Tools into the console.
 - Removed loading settings from cookies.
 
-2.0.0 - 02/25/2015
+**2.0.0 - 02/25/2015**
 - Refactored the layout of the HTML to remove execessive help text.
 - Changed the RNG layout to use radio style selection.
 - Added a room-name pair list in Modding to make it easier to fill out which mod and room to perform the action. The user must enter the room first as a mod for the list to populate.
 
-1.4.1 - 02/21/2015
+**1.4.1 - 02/21/2015**
 - ~~Fine tuned flood detection.~~
 
-1.4.0 - 02/21/2015
+**1.4.0 - 02/21/2015**
 - ~~Added flood detection~~
 
-1.3.0 - 02/17/2015
+**1.3.0 - 02/17/2015**
 - RPH Tools now takes over the official "Settings" link (until it gets used for something useful again)
 - Moved the chat history setting into RPH Tools
 - Changed the RNG button label behavior to say "Wait..." while the buttons are disabled.
 
-1.2.7 - 02/16/2015
+**1.2.7 - 02/16/2015**
 - Fixed a layout issue with the import/export settings.
 - Fixed an issue where the URL for pings would not work until the ping URL is re-entered again. Issue was that it wasn't loaded after getting chat settings.
 
-1.2.6 - 02/15/2015
+**1.2.6 - 02/15/2015**
 - Resized the dialog window to 480x500.
 - Tied RPH Tools to the official blocking mechanism.
 - Added placeholder text and changed the text color in the chat input textbox.
 
-1.2.5 - 02/11/2015
-- Changed the mod target separated to semicolon, as commas are valid in
-  character names.
+**1.2.5 - 02/11/2015**
+- Changed the mod target separated to semicolon, as commas are valid in character names.
 
-1.2.4 - 02/10/2015
+**1.2.4 - 02/10/2015**
 - Added multitarget option for mod commands
 
-1.2.3 - 02/04/2015
+**1.2.3 - 02/04/2015**
 - Added Import/Export settings.
-- Fixed the issue where blocked usernames would fill up the localStorage. There was a problem when loading, it would call "blockUser" which would add the user ID to the blocked users array. But the loading also added it. This fixes the issue supposedly fixed in 1.2.1
+- Fixed the issue where blocked usernames would fill up the localStorage. There was a problem when loading, it would call "blockUser" which would add the user ID to the blocked users array. But the loading also added it. This fixes the issue supposedly fixed in
+
+**1.2.1
 - Fixed an issue with the away message system where if you attempt to enable away on a name already away, it will add another [Away] block.
 
-
-1.2.2 - 02/04/2015
+**1.2.2 - 02/04/2015**
 - Fixed a problem with the random number generator relying on chat tab contents to know which room to post in.
 
-1.2.1 - 02/03/2015
+**1.2.1 - 02/03/2015**
 - (Fixed the issue where blocked usernames would fill up the localStorage.)
 
-1.2.0 - 02/02/2015
+**1.2.0 - 02/02/2015**
 - Fixed a bug with the PM Away Message system where if you enable it for a name, disable it, then disable it again, the username gets eaten up.
 - Your username will be inserted below the chat name to help keep track of alts
 
-1.1.0 - 02/01/2015
+**1.1.0 - 02/01/2015**
 - Changed <form> tags in the HTML to <div> tags. This causes textboxes to invoke a submit action if enter is pressed.
 - Uses local WebStorage now instead of cookies. Cookies will still be loaded if available and as a fallback.
 - Removed PM text colors as they weren't working as intended.
@@ -260,10 +294,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   This is no longer an issue with WebStorage, however, unresponsive names will still be pruned to avoid memory leaks.
 - Added per-username PM away messages. To use, select a name, set an away message, and press "Enable" or "Disable". Names that are away will be highlighted in the list and will auto-reply when someone PMs them.
 
-1.0.1 - 01/04/2015
+**1.0.1 - 01/04/2015**
 - Added a filter so small images will be posted as links instead of the image itself. (No PM filter yet)
 
-1.0.0 - 12/20/2014
+**1.0.0 - 12/20/2014**
 - Cleaned up the code a bit. Which is why it's now a 1.0.0
   - Removed some console dumps since they were not really important anymore
 - Reorganized the UI to be consistent.
@@ -274,33 +308,33 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 - Fixed bounds checking for the general RNG (also so it'd stop using Math.Pow)
 - Blocking is now by way of a button instead of pressing enter on the text input. For some reason, pressing enter may make the browser think you're doing a URL request, which tries to redirect you the site with the request.
 
-0.1.2 - 12/17/2014
+**0.1.2 - 12/17/2014**
 - Limited text colors so bright colors are not available.
 - Extended room link sanitizing on PMs to outgoing PMs.
 - ~~Added the option to include your text color in PMs. This only affects the client side end, so if you enable it but the recipient doesn't, the recipient doesn't see the colors, only you.~~
 - For license reasons I reverted the room link sanitizing on the chat room end to what I originally did. Functionally it's the same.
 
-0.1.1 - 12/15/2014
+**0.1.1 - 12/15/2014**
 - Expanded disabling of room linking to PMs now.
 - Minor cleanup with UI.
 
-0.1.0 - 12/12/2014
+**0.1.0 - 12/12/2014**
 - Added the ability to change a username's color by way of raw hex inputs.
 - Script removes the quote/message of the day on the top header to fix an issue
   where the message would hide the top right section if the browser width was too low.
 - Fixed a bug where exact matching and case sensitivity was not actually working properly.
 - Fixed a bug that was causing the script to think the ping settings were invalid even though they were valid
 
-0.0.8 - 12/10/2014
+**0.0.8 - 12/10/2014**
 - Adding kick and modding actions in the modding section
 - Fixed a loading bug when initializing blocked users.
 
-0.0.7 - 12/08/2014
+**0.0.7 - 12/08/2014**
 - Fixed a bug in the room link checkbox.
 
-0.0.6 - 12/07/2014
+**0.0.6 - 12/07/2014**
 - Added coin tossing and a general RNG
 - Cleaned up the banning/unbanning in Mod Tools
 
-0.0.5 - 12/06/2014
+**0.0.5 - 12/06/2014**
 - Initial release. Implemented pinging, room link disabling, dice rolling, blocking, and banning.
