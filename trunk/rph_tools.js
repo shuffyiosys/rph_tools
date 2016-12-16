@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name       RPH Tools
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_Tools
-// @version    2.3.2a
+// @version    2.3.5
 // @description Adds extended settings to RPH
-// @match      http://chat.rphaven.com/
+// @match      http://chat.rphaven.com
 // @copyright  (c)2014 shuffyiosys@github
 // @grant      none
 // @license    MIT license (https://en.wikipedia.org/wiki/MIT_License)
@@ -73,9 +73,9 @@ var awayMessages = {};
 
 var roomNamePairs = {};
 
-var autoJoinTimer = null;
+var startupTimer = null;
 
-var versString = 'RPH Tools 2.3.2a';
+var versString = 'RPH Tools 2.3.5';
 
 var html =
   '<style>' +
@@ -252,9 +252,24 @@ var html =
     '</div>' +
   '</div>';
 
+var rpht_css = '<style>' +
+  '.rpht_chat_tab {' +
+    'position: absolute;' +
+    'bottom: 40px;' +
+    'height: 40px;' +
+    'overflow-x: auto;' +
+    'overflow-y: hidden;' +
+    'white-space: nowrap;' +
+  '}' +
+
+  '.rpht_chat_tab_scroll {' +
+    'height: 60px;' +
+  '}' +
+  '</style>'
+  ;
+
 /* If this doesn't print, something happened with the global vars */
 console.log('RPH Tools start');
-
 /****************************************************************************
  *                          MAIN FUNCTIONS
  ****************************************************************************/
@@ -314,9 +329,11 @@ function InitRphTools(){
   $('a.settings').hide();
   $('#top p.right').prepend('<a class="pings settings">Settings</a>');
   $('body').append(html);
-
+  $('head').append(rpht_css);
   InitSettingsDialog();
   LoadSettings();
+  setInterval(ReblockList, 120*1000);
+  ReblockList();
 
   console.log('RPH Tools[InitRphTools]: Init complete, setting up dialog box');
   SetUpToolsDialog();
@@ -329,6 +346,8 @@ function InitRphTools(){
 * @brief: Sets up all the ping dialog box GUI handling.
 ****************************************************************************/
 function SetUpToolsDialog() {
+
+  PopulateSettingsDialog();
   ChatSettingsSetup();
   PmSettingsSetup();
   DiceRollSetup();
@@ -337,12 +356,8 @@ function SetUpToolsDialog() {
   ImportExportSetup();
   AboutFormSetup();
 
-  PopulateSettingsDialog();
-  setTimeout(ReblockList, 60*1000);
+  startupTimer = setInterval(DoDelayedSetup, 5*1000);
 
-  if (GetFlagState(RPHT_AUTO_JOIN) === true){
-    autoJoinTimer = setInterval(JoinFavoriteRooms, 5*1000);
-  }
   console.log('RPH Tools[SetUpToolsDialog]: Dialog box setup complete. RPH Tools is now ready.');
 }
 
@@ -826,9 +841,7 @@ function JoinFavoriteRooms(){
       chatSocket.emit('join', {name:favRoom.room, userid:favRoom.userId, pw:favRoom.roomPw});
     }
 
-    if (autoJoinTimer !== null){
-      clearTimeout(autoJoinTimer);
-    }
+    clearTimeout(startupTimer);
   }
 }
 
@@ -1332,6 +1345,11 @@ function RoomJoinSetup(room) {
     AddNameToUI(thisRoom, userId);
   }
   AddModFeatures(thisRoom, userId);
+
+  ResizeChatTabs();
+  if (jQuery._data(window, "events").resize === undefined){
+    $( window ).resize(ResizeChatTabs);
+  }
 }
 
 /****************************************************************************
@@ -1343,7 +1361,7 @@ function RoomJoinSetup(room) {
 function PostMessage(thisRoom, data) {
   getUserById(data.userid, function(User) {
     var timestamp = makeTimestamp(data.time);
-    var msg = parseMsg(data.msg);
+    var msg = parseMsg_rpht(data.msg);
     var classes = '';
     var $el = '';
     var msgHtml = '';
@@ -1374,7 +1392,7 @@ function PostMessage(thisRoom, data) {
     }
     catch (err) {
       console.log('RPH Tools[PostMessage]: I tried pinging D:', err);
-      msg = parseMsg(data.msg);
+      msg = parseMsg_rpht(data.msg);
     }
 
     if ( msg.charAt(0) === '/' && msg.slice(1,3) === 'me') {
@@ -1945,13 +1963,15 @@ function ExtractChatPmSettings(settingsObj){
 * @param:   blockedUsersStorage - Object that holds the stored list.
 ****************************************************************************/
 function ExtractBlockSettings(blockedUsersStorage){
-  console.log("RPH Tools[InitRphTools]: Loaded blocked users: ", blockedUsers);
+  console.log("RPH Tools[InitRphTools]: Loaded blocked users: ", blockedUsersStorage);
 
   for (var i = 0; i < blockedUsersStorage.length; i++) {
     console.log("RPH Tools[InitRphTools]: Blocking user ", blockedUsersStorage[i]);
     if (blockedUsersStorage[i] !== "") {
       var user = blockedUsersStorage[i];
-      BlockUserById(user.id);
+      blockedUsers.push({id:user.id, name:user.name});
+      $('#blockedDropList').append('<option value="' + user.id + '">' +
+                                    user.name + '</option>');
     }
   }
 }
@@ -2040,4 +2060,75 @@ Pm.prototype.appendMsg = function(html){
       });
     });
   }
+};
+
+/****************************************************************************
+* @brief:   Performs actions that are delayed so the script can do things when
+*           actually in chat.
+****************************************************************************/
+function DoDelayedSetup(){
+  if (GetFlagState(RPHT_AUTO_JOIN) === true){
+      JoinFavoriteRooms();
+  }
+}
+
+/****************************************************************************
+* @brief:   Resizes chat tabs accordingly
+****************************************************************************/
+function ResizeChatTabs(){
+  $('#chat-tabs').addClass('rpht_chat_tab');
+
+  if ($('#chat-tabs')[0].clientWidth < $('#chat-tabs')[0].scrollWidth ||
+      $('#chat-tabs')[0].clientWidth + 200 > $('#chat-bottom')[0].clientWidth ){
+    $('#chat-top .inner').css('height', 'calc(100% - 20px)');
+    $('#chat-bottom').css({
+      'margin-top': '-160px',
+      'height' : '120px'
+    });
+    $('#chat-tabs').addClass('rpht_chat_tab_scroll');
+    $('#chat-tabs').css('width', $('#chat-bottom')[0].clientWidth - 200);
+  }
+  else {
+    $('#chat-top .inner').removeAttr('style');
+    $('#chat-bottom').css({
+      'margin-top': '-140px',
+    });
+    $('#chat-tabs').removeClass('rpht_chat_tab_scroll');
+    $('#chat-tabs').css('width', 'auto');
+  }
+}
+
+function parseMsg_rpht(msg){
+  msg = msg.replace(/</g, '&lt;');
+  msg = msg.replace(/>/g, '&gt;');
+  msg = msg.replace(/\n/g, '<br />');
+  msg = msg.replace(/="/g, '');
+  msg = msg.replace(/(\[b\]|\*\*)(.*?)(\[\/b\]|\*\*)/g, '<strong>$2</strong>');
+  msg = msg.replace(/(\-\-\-)/g, '&mdash;');
+  msg = msg.replace(/(\[s\]|\-\-)(.*?)(\[\/s\]|\-\-)/g, '<strike>$2</strike>');
+  msg = msg.replace(/(?:\[i\]|\/\/)([^\/].*?)(?:\[\/i\]|\/\/)/g, function ( str, p1, offset, s ){
+    if (s.charAt(offset-1) == ":" ) {
+      return str;
+    }
+    else {
+      return "<em>" + $('<div>'+p1+'</div>').text() + "</em>";
+    }
+  });
+  msg = msg.replace(/((ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?|^([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+.*)$)/gi,
+    function(url){
+      var full_url = url;
+      var extra = '';
+      if( !full_url.match('^https?:\/\/') ) {
+        full_url = 'http://' + full_url;
+      }
+      if( url.match(/\.(jpg|jpeg|png|gif)/i) ){
+        extra = 'class="img-wrapper"';
+      }
+      else if( url.match(/\S*youtube\.com\S*v=([\w-]+)/i) ){
+        extra = 'class="vid-wrapper"';
+      }
+      return '<a href="' + $('<div>'+full_url+'</div>').text() + '" target="_blank" '+extra+'>' + $('<div>'+url+'</div>').text() + '</a>';
+    });
+
+  return msg;
 };
