@@ -1,0 +1,253 @@
+**Table of contents**
+- [News](#news)
+- [How to install](#how-to-install-and-update)
+- [Features](#features)
+- [How to use](#how-to-use)
+- [Troubleshooting](#troubleshooting)
+- [Known issues](#known-issues)
+- [Limitations](#limitations)
+- [License](#license-disclaimer)
+
+#News
+**Vers. 2.1.4 - 12/3/2015**
+This is to address the intermittent issue that RPH Tools "forgets" the blocked users list. Since I had fun trying to figure out what was going on, I'll dump what happened.
+
+- **Issue 1** - RPH on startup starts blocking those in your normal blocked list. If you have nobody in your blocked list, RPH would block a "nobody". RPH Tools would see RPH trying to block a "nobody" and go forward with blocking, which would also save the list. A quirk with how RPH Tools handles saved blocked users was that it would load the blocked users into a temporary area then issue the normal blocking command, which would add it the main list (this main list is what gets saved). Since this hanged until the getUserByID/getUserByName actually responds, the attempt to block "nobody" would cause RPH Tools to save a blank list since nobody was actually blocked  and it would overwrite what was saved.
+ - **Fix**
+  - RPH Tools checks to see if RPH is trying to block "nobody".
+  - RPH Tools immediately adds saved blocked users to the main list and issues a block directly. Initialization no longer can trigger saving.
+- **Issue 2** - RPH Tools can't block anyone on startup because the getUserByID/getUserByName doesn't actually respond until after the user connects to the chat (i.e., the room list populates).
+ - **Fix**
+  - RPH Tools blocks everyone in the list in the list on startup after 60 seconds from the chat starting up. The user will have to start the chat in that time (after the connection checking dialog), otherwise RPH Tools will not block the users in the list (but it won't save a blank list)
+  - RPH Tools will block everyone in the list anyway if the dialog is brought up.
+  - Quirk: If you open a room list with that user in it, the block that RPH Tools does on initialization will go through.
+
+**11/16/2015**
+Please ignore the last entry, clearly I wasn't thinking.
+* Added the ability to use a custom sound for PM notifications.
+* Added a mute option for PM sounds.
+
+**06/26/2015**
+Hi! This is going to be ~~final update~~ to RPH Tools, unless my smoke testing didn't uncover any game breaking bugs. In which case that'll probably be it! This was to tie up loose ends and leave the script in a state I can consider "complete".
+* Added a new feature to the dice roller to show totals at the end.
+
+**Update** Aaannnnd then I ship bad code. Sorry. It works now.
+
+**05/24/2015**
+This had to be made D:
+* Showing your character name in the tab and text box is switchable.
+
+**05/07/2015**
+Ohmahgurd an update!
+* Fixed how room links are removed from PMs. This won't muck with regular links anymore. It also has a side effect of removing image icons from PMs.
+
+**03/14/2015**
+Happy Pi Day! Too bad the version is 2.0.1 instead of 3.1.4.
+* Created a new automatic modding feature for detecting and removing clones.
+* Added a fix so that when the PM system temporarily goes down, lists with your usernames will not be populated again with those usernames. Every time you reconnect to the PM system, it re-sends your account data blob, which triggers adding names to those lists.
+* Added block users save when using RPH's normal blocking method.
+* Fixed an issue where if you input an invalid text color, the red highlight doesn't go away. It does now when the color is valid.
+* Added a "Print settings" button in "About/Help". This will dump the settings of RPH Tools into the console.
+* **Removed loading settings from cookies**. I hope you don't have them!
+
+Also I'm going to be devoting time away from RPH Tools (since really, what else is there to add?) to work on a side project. I'll do fixes either by request or if I come across them and it really bugs me.
+
+**02/25/2015**
+BURNINNNNNGGGG... 2.0.0! :D
+* Restructured the layout of the dialog. Mostly to line things up, arrange some settings logically, and all that. I also, for better or worse, got a rid of a lot of "newbie help text". So to make up for that, I created [a user's manual](https://drive.google.com/file/d/0B8iCA4FiGl8rZ0hZS2NzWll3VEE/view?usp=sharing).
+* Changed the text input for user names in User Text Color to a drop-down to make it easier to select which character to edit.
+* Changed the RNG layout. Each RNG type is selected via radio button, and the options will show up automatically.
+* In Modding (formally Mod Commands), added a drop list containing room-name pairs. This is to make it easier to input both the room and the moderator name you have, instead of typing them out.
+
+**02/22/2015**
+1.4.1 is online!
+- Fine tuned the additional mod command.
+
+**02/21/2015**
+If it bleeds, we can 1.4.0 it:
+- Added an additional mod command.
+
+**02/17/2015**
+It's all about dat 1.3.0:
+- RPH Tools now takes over the official "Settings" link (until it gets used for something useful again)
+- Moved the chat history setting into RPH Tools
+- Changed the RNG button label behavior to say "Wait..." while the buttons are disabled.
+
+**02/16/2015**
+Get your 1.2.7 ready!
+- Fixed a layout issue with the import/export settings.
+- Fixed an issue where the URL for pings would not work until the ping URL is re-entered again. Issue was that it wasn't loaded after getting chat settings.
+
+**02/15/2015**
+You get 1.2.6!:
+- Resized the dialog to 480x500px. This should still fit on monitors that are 1368x768. Therefore, the minimum resolution to run RPH Tools is now that.
+- Tied the official blocking mechanism to RPH Tools. Blocking someone adds them to the RPH Tools block list. Unblocking them will remove them.
+- Modified the chat room input textbox.
+  - Added a placeholder that says "Posting as [username]". This will disappear if you start typing something (and reappear if the box is empty)
+  - Changed the text color to the character's text color.
+
+**02/11/2015**
+1.2.4 evolved into 1.2.5!
+- Changed the multitarget mod action delimiter as commas are a valid character for names.
+
+**02/10/2015**
+A wild 1.2.4 appeared!
+- Added multitarget mod actions.
+
+**02/08/2015**
+In case you haven't seen it, I made another RPH script for extracting logs. You can find it at https://openuserjs.org/scripts/shuffyiosys/RPH_Log_Extractor
+
+**02/04/2015**
+**UPDATE:**
+
+And two updates in one day! Actually this is what I had planned today. 1.2.3 has:
+- Import/Export your settings! This will export your settings into plaintext. Save this as is and when you want to import them, slurp the text back in and press "Import"!
+- Figured out I didn't actually fix the "leak" when loading the blocked users settings, but I found out where it was and patched it up. I've made sure about a dozen times it's not growing anymore.
+  - You will have to apply the manual clearing again. Apologies.
+- Fixed an issue with the away message system where if you attempt to enable away on a name already away, it will add another [Away] block.
+
+**END UPDATE:**
+
+1.2.2!
+- Fixed a problem with the random number generator relying on chat tab contents to know which room to post in.
+
+**02/03/2015**
+Emergency update to 1.2.1. I found out that localStorage code doesn't work properly and ended up duplicating entries in the blocking side. I fixed this and applied it to chat settings as well to prevent settings accumulating.
+
+If you are experiencing this problem and you wish to clear out the blocked users before updating:
+- Back up your blocked users. Unfortunately you'll have to do this manually.
+- Open the JavaScript Console (F12 normally, select the "Console" tab)
+- Issue a ```localStorage.removeItem('blockedUsers');``` command into the console.
+- Confirm the entry is no longer there by issuing a ```localStorage.getItem('blockedUsers');``` and confirming the console reports back "null"
+
+***
+**02/02/2015**
+I said I'd stop adding features after yesterday on the forum... but this one I couldn't pass up! (also because nobody really suggested anything. Maybe I should wait?)
+
+1.2.0 Changes:
+- Fixed a bug with the PM Away Message system where if you enable it for a name, disable it, then disable it again, the username gets eaten up.
+- Your username will be inserted below the chat name to help keep track of alts as in this example:
+![enter image description here](http://i.imgur.com/HON8IkJ.png "enter image title here")
+
+***
+**02/01/2015**
+**UPDATE**: I went ahead and released 1.1.0 anyway. In addition to the features implemented below, I also implemented using localStorage instead of relying on cookies. This version will still load cookies if you have them if it can't find the entries from localStorage. What this allows now is basically unlimited storage space (well, 50MB of it), whereas cookies were limited to 4KB of data (which is still a lot admittedly for this script).
+
+But do please submit issues if they arise.
+
+***
+I started working on some kinks and other features in RPH Tools. However, since I couldn't test it thoroughly on my end, I'm going to let people beta test it before releasing it. The code is at http://pastebin.com/c2mV8yZK . You'll have to do the manual installation.
+
+Changes in this version:
+- Removed PM text colors as they weren't working as intended.
+- Fixed a bug with blocking. Originally the script didn't touch the cookie that was saved and there wasn't a way to scrub names that no longer would respond to the getUserById. The script now saves every time you block someone to refresh the list. This could be a problem because if you block enough people whose names no longer respond, you could fill up the cookie and it will no longer save blocked people. However, in this version if you've blocked someone with a name that has disappeared and it reappears, you will have to reblock them.
+- Added per-username PM away messages. To use, select a name, set an away message, and press "Enable" or "Disable". Names that are away will be highlighted in the list and will auto-reply when someone PMs them.
+
+***
+#How to Install and Update
+
+## Installing RPH Tools
+1. You must have (one or the other)
+  - [Firefox](http://www.getfirefox.com) with the [Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/) extension installed
+  - [Google Chrome](https://www.google.com/chrome/) or [Chromium](http://www.chromium.org/Home) with the [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en) extension installed.
+  - [Opera](http://www.opera.com) with the [Violent monkey](https://addons.opera.com/en/extensions/details/violent-monkey/?display=en) extension installed.
+2. **For Google Chrome users:** Google Chrome by default does not allow installation of custom user scripts unless you either bypass it or they're on the Chrome store. To bypass this, follow [these instructions](http://techsupportguides.com/install-userscripts-in-chrome/) (that's a link).
+3. If you have a previous version, you should remove it.
+4. Then...
+  - Click on the "Install" button on top to add the script or...
+  - Click on the "Source Code" tab and copy the source code, then...
+    - In Greasemonkey, select "Add new script", enter some information then press OK, then paste the code in there. Make sure to save it and enable it.
+    - In Tampermonkey, select "Add a new script", then paste the code in there. Press the save icon and enable it.
+    - In Violent monkey, go to "Manage Scripts" and press the "New script" button, then paste the code in there.
+5. Refresh RPH if you're on it already for the script to take effect.
+
+##To update
+Just press the "install" button. This will overwrite the version you currently have.
+
+***
+#Features
+![enter image description here](http://i.imgur.com/qI622iT.png "Screen shot the settings")
+
+RPH Tools is a user script that adds additional features into RPH. These features were implemented to either enrich the user's experience to the website or to make certain commands easier to issue. The list of features is pretty long, so here it is in a convenient list form!
+
+### General
+- All of these settings can be changed and applied on the fly without refreshing the chat
+- All persistent settings are saved under localStorage.
+
+### Chat room and PM features
+- Changing the text color of a user name with hex values instead of the slider.
+- Custom pinging options. This allows a user to be given a visual and audio "ping" when someone types up a keyword.
+  - Highlights will mark the keyword and the chat where the ping happened.
+  - Audio pings can be customized to any audio you wish! .mp3, .ogg, or .wav is supported only.
+- PM away message system for each user's name.
+- ~~Room links (where posting the name of the room creates a link to it) can be enabled or disabled~~
+  - RPH no longer automatically links to rooms, but this part of the script does have some beneficial side effects like disabling icons in PMs.
+- Chat icons (where posting a link to a small enough image shows the image instead of the link) can be enabled or disabled.
+- Change how many user posts will be displayed in the room.
+- Toggle showing your user name below each room tab's room name (this requires a chat re-join if you toggle)
+
+### Random number generators
+- Flip a coin!
+- Roll 1-10 dice with 2-100 sides!
+- Generate a number between -2^32-1 and 2^32-1 (they're big numbers).
+
+### Blocking
+- Force block users. This will apply a block flag to users of your choosing.
+  - This only works in the chat.rphaven.com URL proper. Being outside of this URL will not apply this.
+
+### Modding
+- Mods and owners can perform kicks, bans, and mod promotions to a room they own, all without both parties being in the room!
+- You can target one or multiple names.
+- The script will detect if you're a mod in the room when you join and populate a drop-down list you can use to make it easier to populate the room and modding name fields.
+- Flood detection, for those spammers!
+- Clone detection. This catches if someone tries to exploit cloning and will ban the character if more than five of them show up at once (note this will slow down the chat if they have a ton)
+
+### Import/Export Settings
+- You can export settings into plaintext and copy that back in to import.
+
+***
+#How to Use
+This is explained in [the user's manual](https://drive.google.com/file/d/0B8iCA4FiGl8rZ0hZS2NzWll3VEE/view?usp=sharing).
+
+***
+# Troubleshooting
+- Make sure you are using **one version** of this script. If you installed the other versions, they probably won't play nice with each other.
+- Refresh the page after installing. If you are on RPH and you install this script, then this is a must.
+- If your settings are out of whack...
+    - Open up your browser's JavaScript console. In Firefox, either press F12 to bring up the developer's window and select the "Console" tab or go to Options > Developer > Web Console. In Chrome, either do CTRL (Command on Mac) + Shift + J or go to View > Developer > JavaScript Console.
+    - Issue the command ```localStorage.removeItem('chatSettings');``` to delete chat and PM settings or ```localStorage.removeItem('blockedUsers');``` to delete blocked users.
+    - Verify they have been deleted by issuing ```localStorage.getItem('chatSettings');``` or ```localStorage.getItem('blockedUsers');``` and seeing if the console posts ```null```.
+
+
+***
+#Known Issues
+- Rooms share the same chat buffer if you connect to the same one with multiple alts. Pings will propagate to all alts.
+  - The tab highlight will only target the first tab that's in that room, which may or may not be the character pinged.
+- The official blocking mechanism is event driven and depends on when the server gets back. It may or may not respond immediately.
+
+***
+#Limitations
+- If you are running RPH on multiple tabs/windows, most settings will not propagate across all open instances.
+- Greasemonkey/Tampermonkey has no access to local files for security reasons. Therefore, any audio you use for pings must be online somewhere.
+- Do not use the pipe ( | ) in the text fields, I use that as the delimiter for cookie saving.
+
+***
+#Feedback
+Use the issue tracker in the "Issue" tab to report a problem please :D
+
+Or if you're on RPH, use the [support forum](http://www.rphaven.com/topics.php?id=1#topic=1712&page=1).
+
+
+***
+#License/Disclaimer
+Copyright (c) 2014 Shuffyiosys
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+It is also my wish (though not really an obligation via the license) that if you are to spread the word of this script, please link this page directly or at least copy the instructions as they are. i.e., This script works on Firefox _and_ Chrome, do not exclude one or the other please.
+
+***

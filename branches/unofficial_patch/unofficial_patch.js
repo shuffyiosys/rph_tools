@@ -3,7 +3,7 @@
 // @namespace  https://openuserjs.org/scripts/shuffyiosys/RPH_UP
 // @version    0.0.1
 // @description Patches issues with RPH
-// @match      http://chat.rphaven.com/
+// @match      http://*.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
 // @grant      none
 // @license    MIT license (https://en.wikipedia.org/wiki/MIT_License)
@@ -12,7 +12,14 @@
 /*jshint bitwise: false*/
 /*global $:false */
 
-parseMsg = function(msg){
+var VERSION_STRING = 'RPH Unofficial Patch Version 0.0.1';
+
+$(function() {
+  console.log("Getting original parseMsg", unsafeWindow.parseMsg);
+  unsafeWindow.parseMsg = parseMsg_fixed;
+  console.log("Checking fixed parseMsg", unsafeWindow.parseMsg)
+});
+function parseMsg_fixed(msg){
   msg = msg.replace(/</g, '&lt;');
   msg = msg.replace(/>/g, '&gt;');
   msg = msg.replace(/\n/g, '<br />');
@@ -47,4 +54,4 @@ parseMsg = function(msg){
   return msg;
 };
 
-console.log('RPH Unofficial Patch Version 0.0.1 - Successfully applied');
+console.log(VERSION_STRING,'- Successfully applied');
