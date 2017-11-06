@@ -6,7 +6,7 @@
 // @match      http://chat.rphaven.com/
 // @copyright  (c)2014 shuffyiosys@github
 // @grant      none
-// @license    MIT license (https://en.wikipedia.org/wiki/MIT_License)
+// @license    MIT; https://www.wikipedia.org/wiki/MIT_License
 // ==/UserScript==
 /*jshint multistr: true */
 /*jshint bitwise: false*/
